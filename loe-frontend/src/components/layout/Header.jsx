@@ -1,71 +1,56 @@
-import { NavLink } from "react-router-dom";
-import MegaMenu from "./MegaMenu.jsx";
-import { useState, useRef } from "react";
-
-const LOE_ASSISTANTS = [
-  { key: "rack-stack", label: "Rack & Stack", path: "/assistants/rack-stack", description: "Appliances, APs, brackets & BOM" },
-  // future: add more assistants here
-];
+import React, { useState } from "react";
+import { Link, NavLink } from "react-router-dom";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
-  const menuRef = useRef(null);
 
   return (
-    <header className="site-header">
-      <div className="header-inner">
-        <NavLink to="/" className="brand">
-          <span className="brand-mark">WWT</span>
-          <span className="brand-name">LOE</span>
-        </NavLink>
+    <header className="topnav">
+      <div className="topnav-inner">
+        <Link to="/" className="brand">
+          <span className="brand-dot" /> WWT LOE Assistant
+        </Link>
 
         <nav className="nav">
+          <NavLink to="/" end className="nav-link">
+            Home
+          </NavLink>
+
+          {/* Hover parent */}
           <div
-            className="nav-item has-mega"
+            className="nav-link has-menu"
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
           >
-            <button
-              className="nav-link"
-              aria-haspopup="true"
-              aria-expanded={open}
-              onFocus={() => setOpen(true)}
-              onBlur={(e) => {
-                // close only if focus truly left the whole menu
-                if (!menuRef.current?.contains(e.relatedTarget)) setOpen(false);
-              }}
-            >
-              LOE Assistants
-              <span className={`chev ${open ? "up" : ""}`}>▾</span>
-            </button>
+            LOE Assistants
+            <span className="caret">▾</span>
 
-            <MegaMenu
-              innerRef={menuRef}
-              open={open}
-              title="Choose an assistant"
-              items={[
-                {
-                  heading: "Available now",
-                  links: LOE_ASSISTANTS.map(a => ({
-                    label: a.label,
-                    to: a.path,
-                    meta: a.description
-                  })),
-                },
-                {
-                  heading: "Coming soon",
-                  links: [
-                    { label: "Wireless Install", to: "#", disabled: true, meta: "AP placement, waves & validation" },
-                    { label: "Device Relocation", to: "#", disabled: true, meta: "Move, decommission, re-rack" },
-                  ],
-                },
-              ]}
-              onAnyClick={() => setOpen(false)}
-            />
+            {/* Mega menu */}
+            <div className={`mega ${open ? "open" : ""}`}>
+              <div className="mega-col">
+                <div className="mega-title">Currently available</div>
+                <Link className="mega-item" to="/assistants/rack-stack">
+                  Rack &amp; Stack
+                </Link>
+              </div>
+
+              <div className="mega-col">
+                <div className="mega-title">Coming soon</div>
+                <div className="mega-item disabled">Wireless Install</div>
+                <div className="mega-item disabled">Switch Install</div>
+                <div className="mega-item disabled">Device Relocation</div>
+              </div>
+            </div>
           </div>
 
-          <NavLink to="/" className="nav-link">Docs</NavLink>
-          <NavLink to="/" className="nav-link">Support</NavLink>
+          <a
+            className="nav-link"
+            href="https://www.wwt.com"
+            target="_blank"
+            rel="noreferrer"
+          >
+            WWT.com
+          </a>
         </nav>
       </div>
     </header>
