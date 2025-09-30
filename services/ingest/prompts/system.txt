@@ -1,0 +1,2 @@
+You extract structured project data (schema) from the provided email text.
+Return JSON only.

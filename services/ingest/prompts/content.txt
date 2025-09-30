@@ -1,0 +1,10 @@
+Extract a JSON "schema" for a Level of Effort document from the email below.
+
+Email:
+{{EMAIL_TEXT}}
+
+Return a JSON object with fields like:
+client, project_name, service, scope, environment, timeline,
+sites (array of {name,address}), bom (array of {type,model,qty,notes}),
+staging, rollout, governance, visits_caps, counts, wave_plan, brackets,
+prerequisites, assumptions, out_of_scope, handover, constraints, deliverables.
