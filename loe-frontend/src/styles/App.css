@@ -86,3 +86,36 @@ code { background: #f1f5f9; padding: 2px 6px; border-radius: 6px; }
 .mega-item { display:block; padding:8px 10px; border-radius:8px; text-decoration:none; color:var(--ink); }
 .mega-item:hover { background: #f1f5f9; }
 .mega-item.disabled { color: #94a3b8; pointer-events: none; }
+
+/* Markdown styles */
+.markdown-body h3 {
+  font-size: 1.2rem;
+  margin: 1.2em 0 0.6em;
+}
+.markdown-body p {
+  margin: 0.5em 0;
+  line-height: 1.5;
+}
+.markdown-body ul, .markdown-body ol {
+  margin: 0.5em 0 0.5em 1.5em;
+}
+.markdown-body table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+}
+.markdown-body th, .markdown-body td {
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+}
+.markdown-body th {
+  background: #f9fafb;
+  text-align: left;
+}
+.markdown-body input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.prose table { border-collapse: collapse; width: 100%; }
+.prose th, .prose td { border: 1px solid #e5e7eb; padding: 8px 10px; }
+.prose th { background: #f8fafc; text-align: left; }
