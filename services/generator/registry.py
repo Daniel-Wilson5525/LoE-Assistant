@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Callable
 
-# ⬇️ import submodules directly
 from services.generator.modes.rack_stack import prompt as rs_prompt, post as rs_post
 from services.generator.modes.default    import prompt as df_prompt, post as df_post
 

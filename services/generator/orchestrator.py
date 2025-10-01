@@ -4,12 +4,8 @@ import os, json, re
 from services.prompt_loader import load_prompt_file
 from services.generator.registry import get_mode
 
-# decide client at runtime (after .env is loaded by app.py)
-from adapters.mock_client import AIClient as MockAIClient
-from adapters.ai_client  import AIClient as RealAIClient
-
-def _get_client():
-    return MockAIClient() if os.getenv("USE_MOCK", "0") == "1" else RealAIClient()
+from adapters import AIClient
+print(f"[generator] Using AIClient") 
 
 def _coerce_json(text: str) -> dict:
     if isinstance(text, dict):
@@ -24,6 +20,7 @@ def _coerce_json(text: str) -> dict:
             return json.loads(m.group(0))
         except Exception:
             pass
+    # With json_mode=True this should basically never happen:
     return {"summary": "", "tasks": "", "open_questions": ["Non-JSON response from model"]}
 
 def _ensure_heading(text: str, heading: str) -> str:
@@ -49,11 +46,18 @@ def generate_outputs(schema: dict, loe_type: str | None = None) -> dict:
     # build the user prompt via the mode
     user_prompt = mode.build_prompt(schema)
 
-    client = _get_client()
+    client = AIClient()
     try:
         raw = client.complete(user_prompt, system=system, json_mode=True, max_tokens=3000)
     except TypeError:
         raw = client.complete(user_prompt, system=system, json_mode=False, max_tokens=3000)
+    # Force strict JSON; AIClient handles enforcement + repair.
+    raw = client.complete(
+        user_prompt,
+        system=system,
+        json_mode=True,
+        max_tokens=3000,
+    )
 
     data = _coerce_json(raw)
 

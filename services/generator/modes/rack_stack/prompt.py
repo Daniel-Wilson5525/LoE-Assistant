@@ -133,14 +133,28 @@ def build_prompt(schema: dict) -> str:
     ### Constraints / special notes
     {bullet_block(schema.get('constraints')) or '- (none provided)'}
 
-    ## Task
-    1) Draft **PROJECT SUMMARY** (6–9 sentences). Use concrete numbers from Devices/BOM and *Derived counts*; mention sites, phased rollout, staging, and governance.
-        - You MUST include this exact sentence in the summary: {device_totals_line}
-    2) Draft **PROJECT TASKS** as grouped checklists:
-       - **Site Survey (Visit 1)**, **Pre-checks**, **Logistics & Staging**, **Installation (per visit)**,
-         **Registration & Bring-Up**, **Validation / Post-Deployment Survey**, **Handover & Documentation**, **Out-of-Scope**.
-         Include model-specific bracket steps where applicable.
-    3) Propose **Open Questions** (4–8) tailored to missing details.
-
-    Output JSON with keys: "summary", "tasks", "open_questions"
+    ## Task (follow these formatting rules strictly)
+     1) **PROJECT SUMMARY** (Markdown)
+        - 6–9 sentences.
+        - Include 3–6 “Key tasks” bullets.
+        - Include a small BOM table (Type | Model | Qty).
+        - You MUST include this exact sentence (verbatim):
+          {device_totals_line}
+        - Use only '### ' headings (no '#').
+     2) **PROJECT TASKS** (Markdown)
+        - Use '### ' section headings exactly in this order:
+          1) Site Survey (Visit 1)
+          2) Pre-checks
+          3) Logistics & Staging
+          4) Installation (Visit 2)
+          5) Registration & Bring-Up
+          6) Validation / Post-Deployment
+          7) Handover & Documentation
+          8) Out of Scope
+        - Use GFM checkboxes ('- [ ] ') for every line item.
+        - Include model-specific bracket/mount steps where applicable.
+     3) **Open Questions**
+        - Provide 4–8 targeted questions for missing details (OOH/CAB, photo policy, spares, storage/lifts/permits, etc.).
+ 
+     Return JSON ONLY with keys: "summary", "tasks", "open_questions".
     """).strip()
