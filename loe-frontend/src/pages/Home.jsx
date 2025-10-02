@@ -9,7 +9,7 @@ export default function Home() {
         Pick an LOE assistant from the navigation. Start with Rack &amp; Stack.
       </p>
       <div>
-        <Link className="btn" to="/assistants/rack-stack">
+        <Link className="btn" to="/assistants/rack-stack/1">
           Open Rack &amp; Stack
         </Link>
       </div>

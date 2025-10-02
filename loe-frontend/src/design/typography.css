@@ -1,0 +1,29 @@
+/* Typography scale & utilities */
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
+  /* Sizes (fluid-friendly base) */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 34px;
+}
+
+html, body {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* Headings (tighten tracking slightly for modern look) */
+.h1, h1 { font-size: var(--text-2xl); font-weight: 800; letter-spacing: -.01em; margin: 0; }
+.h2, h2 { font-size: var(--text-xl);  font-weight: 700; letter-spacing: -.005em; margin: 0 0 var(--space-2); }
+.h3, h3 { font-size: var(--text-lg);  font-weight: 600; margin: 0 0 var(--space-2); }
+
+/* Body helpers */
+.muted { color: var(--muted); }
+.small { font-size: var(--text-xs); }

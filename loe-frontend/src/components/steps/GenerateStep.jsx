@@ -3,7 +3,7 @@ import { generateLoE } from "../../lib/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import AppShell from "../layout/AppShell";
-import StepNav from "../layout/StepNav";
+
 
 /* strip duplicate headings injected by the model/system */
 const stripHeading = (text = "", head = "PROJECT SUMMARY") =>
@@ -88,10 +88,6 @@ export default function GenerateStep({ schema, onBack }) {
 
   return (
     <AppShell title="Rack & Stack Assistant" rightSlot={rightHeader}>
-      {/* Grid: left content + right sidebar stepper */}
-      <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-6">
-        <StepNav step={2} />
-
         <div className="space-y-6">
           {/* Alerts / loading */}
           {err && (
@@ -135,7 +131,6 @@ export default function GenerateStep({ schema, onBack }) {
             </>
           )}
         </div>
-      </div>
     </AppShell>
   );
 }
