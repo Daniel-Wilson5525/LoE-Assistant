@@ -250,3 +250,64 @@ code {
 }
 .stepper-btn.is-active .stepper-index { background: var(--brand); color: #fff; }
 .stepper-label { white-space: nowrap; font-weight: 600; }
+
+/* Bubble panels + chips */
+.panel {
+  background: #fff;
+  border: 1px solid rgba(15,23,42,0.06);
+  border-radius: 18px;
+  box-shadow:
+    0 1px 2px rgba(16,24,40,.06),
+    0 8px 24px rgba(16,24,40,.06);
+}
+.panel-header { padding: 14px 18px 0 18px; }
+.panel-body   { padding: 12px 18px 18px 18px; }
+.panel + .panel { margin-top: 16px; }
+
+.section-title { display:flex; align-items:center; gap:10px; margin:0 0 6px; }
+.section-title .icon {
+  width: 28px; height: 28px; border-radius: 999px;
+  display:grid; place-items:center; background:#eef2ff; color:#3730a3; font-weight:700;
+}
+.badge {
+  display:inline-flex; align-items:center; gap:6px;
+  font-weight:600; font-size:12px;
+  color:#1f2937; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:999px; padding:6px 10px;
+}
+.badge.positive { background:#ecfdf5; border-color:#d1fae5; color:#065f46; }
+.badge.info     { background:#eef2ff; border-color:#e0e7ff; color:#3730a3; }
+.panel-divider { height:1px; background:#eef2ff; margin:12px 0; }
+
+/* Inputs for Edit page */
+.form-grid { display:grid; grid-template-columns: 1fr; gap:12px; }
+@media (min-width: 860px) { .form-grid { grid-template-columns: 1fr 1fr; } }
+.field { display:flex; flex-direction:column; gap:6px; }
+.label { font-size:12px; font-weight:600; color:#334155; }
+.input, .textarea {
+  font: inherit; color: var(--ink);
+  border:1px solid var(--border); border-radius:12px; background:#fff;
+  padding:10px 12px;
+  transition: box-shadow var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+}
+.input:focus, .textarea:focus { outline:none; border-color: var(--brand); box-shadow: var(--ring); }
+.textarea { min-height:120px; resize:vertical; }
+.hint { font-size:12px; color: var(--muted); }
+
+
+/* --- Export bar (Generate step) --- */
+.export-bar {
+  position: sticky;
+  bottom: 12px;           /* sits a bit above the bottom */
+  z-index: 10;
+}
+.export-bar-inner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  box-shadow: var(--shadow-1);
+}
+.export-actions { display: inline-flex; gap: 8px; }
+
