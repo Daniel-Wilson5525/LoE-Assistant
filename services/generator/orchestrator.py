@@ -5,7 +5,8 @@ from services.prompt_loader import load_prompt_file
 from services.generator.registry import get_mode
 
 from adapters import AIClient
-print(f"[generator] Using AIClient") 
+print(f"[generator] Using AIClient")
+
 
 def _coerce_json(text: str) -> dict:
     if isinstance(text, dict):
@@ -23,11 +24,20 @@ def _coerce_json(text: str) -> dict:
     # With json_mode=True this should basically never happen:
     return {"summary": "", "tasks": "", "open_questions": ["Non-JSON response from model"]}
 
+
 def _ensure_heading(text: str, heading: str) -> str:
+    """Ensure each section starts with a Markdown h3 heading for consistent rendering."""
     if not text:
         return text
     stripped = str(text).lstrip()
-    return f"{heading}\n{stripped}" if not stripped.upper().startswith(heading) else text
+    md = f"### {heading.title()}"
+    # If the model already started with our heading (case-insensitive), keep as-is
+    if stripped.lower().startswith(heading.lower()):
+        return text
+    if stripped.lower().startswith(md.lower()):
+        return text
+    return f"{md}\n\n{stripped}"
+
 
 def generate_outputs(schema: dict, loe_type: str | None = None) -> dict:
     schema = dict(schema or {})
@@ -47,11 +57,7 @@ def generate_outputs(schema: dict, loe_type: str | None = None) -> dict:
     user_prompt = mode.build_prompt(schema)
 
     client = AIClient()
-    try:
-        raw = client.complete(user_prompt, system=system, json_mode=True, max_tokens=3000)
-    except TypeError:
-        raw = client.complete(user_prompt, system=system, json_mode=False, max_tokens=3000)
-    # Force strict JSON; AIClient handles enforcement + repair.
+    # Single JSON-enforced call (the client already handles param compatibility & repair)
     raw = client.complete(
         user_prompt,
         system=system,
@@ -61,9 +67,9 @@ def generate_outputs(schema: dict, loe_type: str | None = None) -> dict:
 
     data = _coerce_json(raw)
 
-    # normalize headings the UI expects
-    data["summary"] = _ensure_heading(data.get("summary", ""), "PROJECT SUMMARY")
-    data["tasks"]   = _ensure_heading(data.get("tasks",   ""), "PROJECT TASKS")
+    # normalize headings the UI expects (as Markdown sections)
+    data["summary"] = _ensure_heading(data.get("summary", ""), "Project Summary")
+    data["tasks"]   = _ensure_heading(data.get("tasks",   ""), "Project Tasks")
     if not isinstance(data.get("open_questions"), list):
         data["open_questions"] = [str(data.get("open_questions") or "")]
 

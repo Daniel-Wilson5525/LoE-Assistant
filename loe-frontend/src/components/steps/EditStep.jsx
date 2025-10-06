@@ -21,6 +21,13 @@ function setAtPath(obj, path, value) {
 const isMultilineKey = (k = "") =>
   /notes|description|scope|assumptions|constraints|deliverables|questions|summary/i.test(k);
 
+/** Allow spaces: stop global key handlers from eating Space on inputs */
+const stopGlobalKeys = (e) => {
+  // Let input handle it; don't bubble to any window-level keydown listeners
+  e.stopPropagation();
+  // Never preventDefault here — we WANT the space character to be typed
+};
+
 /** -------- leaf editors -------- */
 function PrimitiveInput({ k, value, onChange }) {
   const type = typeof value;
@@ -34,6 +41,7 @@ function PrimitiveInput({ k, value, onChange }) {
             className="input"
             checked={!!value}
             onChange={(e) => onChange(e.target.checked)}
+            onKeyDown={stopGlobalKeys}
             style={{ width:18, height:18 }}
           />
           <span className="hint">{String(value)}</span>
@@ -48,9 +56,12 @@ function PrimitiveInput({ k, value, onChange }) {
         <input
           className="input"
           type="number"
+          inputMode="numeric"
           value={Number.isFinite(value) ? value : ""}
           onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+          onKeyDown={stopGlobalKeys}
           placeholder="0"
+          autoComplete="off"
         />
       </label>
     );
@@ -66,13 +77,21 @@ function PrimitiveInput({ k, value, onChange }) {
           className="textarea"
           value={val}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={stopGlobalKeys}
           rows={6}
+          spellCheck={false}
+          autoComplete="off"
+          style={{ whiteSpace: "pre-wrap" }}  // preserve spaces & newlines
         />
       ) : (
         <input
           className="input"
+          type="text"
           value={val}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={stopGlobalKeys}
+          spellCheck={false}
+          autoComplete="off"
         />
       )}
     </label>
@@ -103,12 +122,14 @@ function ArrayEditor({ k, value = [], path, onPatch }) {
             rows={Math.min(10, Math.max(4, value.length))}
             value={text}
             onChange={(e) => {
-              const next = e.target.value
-                .split(/\r?\n/)
-                .map(s => s.trim())
-                .filter(Boolean);
+              // Keep internal spaces as typed; only split on newlines
+              const next = e.target.value.split(/\r?\n/);
               onPatch(setAtPath, path, next);
             }}
+            onKeyDown={stopGlobalKeys}
+            spellCheck={false}
+            autoComplete="off"
+            style={{ whiteSpace: "pre-wrap" }}
           />
         </div>
       </div>
@@ -118,8 +139,9 @@ function ArrayEditor({ k, value = [], path, onPatch }) {
   // Array of objects: render each item as a nested panel
   const addEmpty = () => {
     const template = isObjects ? { ...(value[0] || {}) } : {};
-    // if array is empty, default to { name:"", value:"" }                // generic fallback
-    const empty = Object.keys(template).length ? Object.fromEntries(Object.keys(template).map(k => [k, ""])) : { name:"", value:"" };
+    const empty = Object.keys(template).length
+      ? Object.fromEntries(Object.keys(template).map(k => [k, ""]))
+      : { name:"", value:"" }; // generic fallback
     onPatch(setAtPath, path, [...(value || []), empty]);
   };
   const removeAt = (idx) => {
@@ -299,6 +321,10 @@ export default function EditStep({ schema, onSchemaChange, onNext }) {
             rows={16}
             value={jsonText}
             onChange={(e) => setJsonText(e.target.value)}
+            onKeyDown={stopGlobalKeys}
+            spellCheck={false}
+            autoComplete="off"
+            style={{ whiteSpace: "pre-wrap" }}
           />
           <div className="panel-actions" style={{ justifyContent:"flex-end", marginTop:8 }}>
             <button className="btn" type="button" onClick={applyJson}>Apply JSON</button>
