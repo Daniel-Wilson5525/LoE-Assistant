@@ -23,7 +23,7 @@ def _jload(t):
 def _empty_schema(notes_raw: str = "") -> dict:
     return {
         "client": "", "project_name": "", "service": "", "scope": "", "environment": "", "timeline": "",
-        "sites": [], "devices": [], "bom": [],
+        "sites": [], "bom": [],
         "staging": {"ic_used": False, "doa": False, "burn_in": False, "labelling": "", "packing": ""},
         "rollout": {"waves": "", "floors": "", "ooh_windows": "", "change_approvals": ""},
         "governance": {"pm": "", "comms_channels": "", "escalation": ""},
@@ -48,7 +48,6 @@ def _coerce_json(text: str) -> dict:
             return obj
     return _empty_schema()
 
-
 def extract_fields(email_text: str) -> dict:
     email_text = (email_text or "").strip()
     if len(email_text) < 10:
@@ -62,6 +61,6 @@ def extract_fields(email_text: str) -> dict:
     data = _coerce_json(raw)
     data["notes_raw"] = email_text
 
+    # single place to clean + coerce everything (also folds legacy 'devices' into 'bom')
     data = normalize_schema(data)
-
     return data

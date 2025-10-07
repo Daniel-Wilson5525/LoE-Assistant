@@ -9,35 +9,20 @@ from services.generator.shared.derive import (
     extract_phase_block,
 )
 
-def _lines_from_devices(schema: dict) -> str:
+def _lines_from_bom(schema: dict) -> str:
     items = []
-    bom_rows = [
-        r for r in (schema.get("bom") or [])
-        if (r.get("model") or r.get("type")) and (r.get("qty") not in (None, "", 0))
-    ]
-    if bom_rows:
-        for r in bom_rows:
-            t = (r.get("type") or "").strip() or "Device"
-            m = (r.get("model") or "").strip()
-            q = r.get("qty")
-            note = (r.get("notes") or "").strip()
-            line = f"- {q} × {t}{(' – ' + m) if m else ''}"
-            if note:
-                line += f" ({note})"
-            items.append(line)
-    else:
-        for d in (schema.get("devices") or []):
-            if isinstance(d, dict):
-                t = (d.get("type") or "").strip()
-                q = d.get("qty")
-            else:
-                t = str(d).strip()
-                q = None
-            if t and q not in (None, "", 0):
-                items.append(f"- {q} × {t}")
-            elif t:
-                items.append(f"- {t}")
-    return "\n".join(items) if items else "• (No devices listed)"
+    for r in (schema.get("bom") or []):
+        if not ((r.get("model") or r.get("type")) and (r.get("qty") not in (None, "", 0))):
+            continue
+        t = (r.get("type") or "").strip() or "Device"
+        m = (r.get("model") or "").strip()
+        q = r.get("qty")
+        note = (r.get("notes") or "").strip()
+        line = f"- {q} × {t}{(' – ' + m) if m else ''}"
+        if note:
+            line += f" ({note})"
+        items.append(line)
+    return "\n".join(items) if items else "• (No BOM items listed)"
 
 def _sites_block(schema: dict) -> str:
     sites = schema.get("sites") or []
@@ -84,7 +69,7 @@ def build_prompt(schema: dict) -> str:
     )
 
     sites_block   = _sites_block(schema)
-    devices_block = _lines_from_devices(schema)
+    bom_lines     = _lines_from_bom(schema)
 
     rollout_lines = []
     if rollout.get("waves"):           rollout_lines.append(f"Waves/sequence: {rollout['waves']}")
@@ -98,20 +83,8 @@ def build_prompt(schema: dict) -> str:
         "### Phase breakdown (as provided)\n" + phase_block if phase_block else "")
 
     return dedent(f"""
-    You are a delivery engineer. Start from the GOLDEN TEMPLATE below and produce a Rack & Stack LOE as **minimal edits**:
-    - Keep section headings and order from the golden template.
-    - Insert project-specific details (client, primary site, devices/BOM, counts, rollout, governance, staging).
-    - Replace placeholders:
-      • {{CLIENT}} -> the 'client' field (fallback '(Client)').
-      • {{PRIMARY_SITE}} -> the primary site line (Name — Address) or '(TBD)'.
-      • {{DEVICE_TOTALS_SENTENCE}} -> the exact device totals line provided below.
-      • {{BOM_TABLE}} -> leave this token as-is; backend may replace it. If removed by you, keep a short BOM summary list instead.
-    - If a step is **Out of Scope** or **already provided/handled by client**, then:
-      • Either **remove** that checklist line, or
-      • Replace it with: "- [x] Provided by client (no action required)" where appropriate.
-    - Treat phrases like "already provided", "handled by client", "not required", "completed by client" in assumptions/prerequisites/constraints/notes as signals to prune/mark tasks.
-    - Use GFM checkboxes ('- [ ] ' or '- [x] ').
-    - Begin your outputs with "### Project Summary" and "### Project Tasks".
+    You are a delivery engineer. Start from the GOLDEN TEMPLATE below and produce a Rack & Stack LOE as **minimal edits**.
+    Use the BOM as the single source of truth (ignore any legacy 'devices' input).
 
     ## Project context (structured)
     Client: {schema.get('client','')}
@@ -126,11 +99,11 @@ def build_prompt(schema: dict) -> str:
     {sites_block}
 
     ### Devices / BOM
-    {devices_block}
+    {bom_lines}
 
     ### Derived counts
     {device_totals_line}
-    {"- Total ordered devices (from BOM/devices): " + str(total_ordered) if total_ordered else "- (no derived counts)"}
+    {"- Total ordered devices (from BOM): " + str(total_ordered) if total_ordered else "- (no derived counts)"}
 
     ### Governance & Communications
     - Project Manager: {governance.get('pm') or 'TBD'}

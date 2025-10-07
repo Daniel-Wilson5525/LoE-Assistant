@@ -77,7 +77,6 @@ def _coerce_governance(gv) -> dict:
             "escalation": trim(gv.get("escalation")),
         }
     s = trim(gv)
-    # If just a string, better to store it in pm
     return {"pm": s, "comms_channels": "", "escalation": ""}
 
 def _coerce_handover(ho) -> dict:
@@ -99,7 +98,6 @@ def _coerce_staging(st) -> dict:
             "packing": trim(st.get("packing")) if isinstance(st.get("packing"), (str, list)) else "",
         }
     s = trim(st)
-    # If just a string (e.g., "labels provided"), treat as labelling note
     return {"ic_used": False, "doa": False, "burn_in": False, "labelling": s, "packing": ""}
 
 def _coerce_visits_caps(vc) -> dict:
@@ -122,30 +120,30 @@ def _coerce_counts(ct) -> dict:
     n = to_number(ct)
     return {"aps_ordered": None, "aps_to_mount": None, "devices_total": n}
 
-def _normalize_devices(devs) -> list[dict]:
+def _merge_devices_into_bom(bom: list, devices) -> list:
     """
+    Fold legacy `devices` into BOM.
     Accepts:
       - list of dicts like {'type': 'Server', 'qty': 10}
-      - list of strings like 'Server', 'Cisco 9300 x8'
-    Returns list of {'type': str, 'qty': int}
+      - list of strings like 'Server x8'
+    Produces BOM rows {type, model, qty, notes}.
     """
-    out = []
-    for x in (devs or []):
-        t, q = "", 0
+    out = list(bom or [])
+    for x in (devices or []):
+        typ, qty = "", 0
         if isinstance(x, dict):
-            t = trim(x.get("type"))
-            q = to_number(x.get("qty")) or 0
+            typ = trim(x.get("type"))
+            qty = to_number(x.get("qty")) or 0
         else:
             s = trim(x)
-            m = re.search(r"\bx\s*(\d+)\b$", s, flags=re.I)
+            m = re.search(r"\bx\s*(\d+)\b", s, flags=re.I)
             if m:
-                try: q = int(m.group(1))
-                except Exception: q = 0
-                t = trim(re.sub(r"\bx\s*\d+\b$", "", s, flags=re.I))
+                qty = int(m.group(1))
+                typ = trim(re.sub(r"\bx\s*\d+\b", "", s, flags=re.I))
             else:
-                t = s
-        if t or q:
-            out.append({"type": t, "qty": int(q)})
+                typ = s
+        if typ or qty:
+            out.append({"type": typ or "Device", "model": "", "qty": int(qty), "notes": ""})
     return out
 
 # -------- main --------------------------------------------------------------
@@ -164,13 +162,10 @@ def normalize_schema(s: dict) -> dict:
         if (isinstance(x, dict) and (x.get("name") or x.get("address")))
     ]
 
-    # Devices / BOM
-    if not isinstance(s.get("bom"), list): s["bom"] = []
-    s["devices"] = _normalize_devices(s.get("devices"))
-    if not s["bom"] and s.get("devices"):
-        for d in s["devices"]:
-            if d["type"] or d["qty"]:
-                s["bom"].append({"type": d["type"], "model": "", "qty": d["qty"], "notes": ""})
+    # BOM only (fold any legacy 'devices' into BOM)
+    bom = s.get("bom") if isinstance(s.get("bom"), list) else []
+    s["bom"] = _merge_devices_into_bom(bom, s.get("devices") if isinstance(s.get("devices"), list) else [])
+    s.pop("devices", None)  # drop devices from final schema
 
     # Coerce structured mappings (accept dict or string)
     s["rollout"]    = _coerce_rollout(s.get("rollout"))
@@ -193,5 +188,16 @@ def normalize_schema(s: dict) -> dict:
 
     # Wave plan – force list
     s["wave_plan"] = s.get("wave_plan") if isinstance(s.get("wave_plan"), list) else []
+
+    # ---- Auto-derive counts.devices_total from BOM if missing ----
+    try:
+        from services.generator.shared.derive import sum_bom_qty
+        total = s.get("counts", {}).get("devices_total")
+        if not total:
+            computed = sum_bom_qty(s)
+            if computed:
+                s["counts"]["devices_total"] = computed
+    except Exception:
+        pass
 
     return s
