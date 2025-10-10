@@ -85,6 +85,12 @@ def build_prompt(schema: dict) -> str:
     return dedent(f"""
     You are a delivery engineer. Start from the GOLDEN TEMPLATE below and produce a Rack & Stack LOE as **minimal edits**.
     Use the BOM as the single source of truth (ignore any legacy 'devices' input).
+                  
+    ### Tone & opener rules (important)
+    - Open the **Project Summary** with a single client-specific sentence that names **{{CLIENT}}**, the **primary site**, and the **objective** in natural language.
+      Example: "WWT will assist {{CLIENT}} in installing and labelling network equipment at {{PRIMARY_SITE}} to support the Datacenter Rack & Stack Upgrade."
+    - Avoid generic phrasing like "The partner will perform..." as your first sentence.
+    - Keep the rest concise and professional.
 
     ## Project context (structured)
     Client: {schema.get('client','')}
