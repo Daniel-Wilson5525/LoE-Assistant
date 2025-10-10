@@ -99,7 +99,7 @@ def build_prompt(schema: dict) -> str:
     {sites_block}
 
     ### Devices / BOM
-    {bom_lines}
+    (BOM_TABLE)
 
     ### Derived counts
     {device_totals_line}

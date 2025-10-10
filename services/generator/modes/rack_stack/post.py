@@ -3,6 +3,13 @@ import re
 from services.generator.shared.tables import bom_table_markdown
 from services.generator.shared.derive import primary_site_line
 
+_MINI_BOM_RE = re.compile(
+    r"(?ims)^\s*\|\s*Type\s*\|\s*Model\s*\|\s*Qty\s*\|\s*$"  # header
+    r".+?"                                                    # table body
+    r"(?=^\S|\Z)"                                             # stop at next non-table section
+)
+
+
 _BULLET_RE = re.compile(r"^(?:\s*[-*•o]\s+)(?!\[[ xX]\])", flags=re.M)
 
 def _bullets_to_checkboxes(text: str) -> str:
@@ -18,6 +25,9 @@ def post_process(schema: dict, result: dict) -> dict:
 
     summary = summary.replace("{{CLIENT}}", client)
     summary = summary.replace("{{PRIMARY_SITE}}", site)
+    # Remove any small auto-generated Type/Model/Qty tables from AI output
+    summary = _MINI_BOM_RE.sub("", summary).strip()
+
 
     # BOM replacement: if template left {{BOM_TABLE}}, replace with actual table; else append if missing
     bom_md = bom_table_markdown(schema)
