@@ -10,18 +10,18 @@ STRICT OUTPUT CONTRACT
 GLOBAL FORMATTING RULES
 - Use Markdown. Do NOT use level-1 '#' headings.
 - Section headings MUST use '### '.
-- Checklist items MUST use '- [ ] ' (GFM checkboxes).
+- List items MUST use simple bullets: '- ' (no checkboxes).
 - If a value is unknown, write 'TBD' (never invent).
 
 SUMMARY (Markdown)
 - 1 short paragraph stating the outcome/end-goal.
 - Add a line: **Site address:** <Name — Address> if available.
-- Add 3–6 bullet “Key tasks” overview.
+- Add 3–6 bullet “Key tasks” overview (simple '- ' bullets).
 - Include a small BOM table with columns: Type | Model | Qty.
 - You MUST include this exact sentence (verbatim) in the summary:
   **Device totals:** {aps_ordered|TBD} APs ordered — {aps_to_mount|TBD} to be mounted; {devices_total|TBD} total devices.
 
-PROJECT TASKS (Markdown, ordered sections; each item a checkbox '- [ ] ')
+PROJECT TASKS (Markdown, ordered sections; bullets only '- ')
 - ### Site Survey (Visit 1)
 - ### Pre-checks
 - ### Logistics & Staging
@@ -29,7 +29,9 @@ PROJECT TASKS (Markdown, ordered sections; each item a checkbox '- [ ] ')
 - ### Registration & Bring-Up
 - ### Validation / Post-Deployment
 - ### Handover & Documentation
+- ### Client Prerequisites
 - ### Out of Scope
+(Every section must exist, even if its list is '- (none provided)'.)
 
 OPEN QUESTIONS
 - Provide 4–8 targeted questions for gaps (access windows, OOH/change approvals, photo policy, spares policy, storage/lift/permits, etc.).

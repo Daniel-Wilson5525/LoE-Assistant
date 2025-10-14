@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ingestLoE } from "../../lib/api";
+import { ingestText } from "../../lib/api";
 import { DEFAULT_SCHEMA } from "../../lib/schema"; // if this export differs, swap accordingly
 
 export default function PasteStep({ onIngested, defaultLoeType = "rack_stack" }) {
@@ -10,7 +10,7 @@ export default function PasteStep({ onIngested, defaultLoeType = "rack_stack" })
   const submit = async () => {
     setErr(""); setLoading(true);
     try {
-      const { schema } = await ingestLoE(text, defaultLoeType);
+      const { schema } = await ingestText(text, defaultLoeType);
       onIngested(schema);
     } catch (e) {
       setErr(e.message || "Failed to extract fields");

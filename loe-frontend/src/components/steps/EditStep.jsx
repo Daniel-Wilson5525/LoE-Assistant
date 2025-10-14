@@ -336,7 +336,13 @@ export default function EditStep({ schema, onSchemaChange, onNext }) {
       <div className="panel">
         <div className="panel-body" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12 }}>
           <span className="hint">Review/edit all fields above, then generate your LoE.</span>
-          <button className="btn" onClick={onNext}>Generate</button>
+          <button
+            className="btn"
+            type="button"                          // ✅ avoid implicit submit
+            onClick={(e) => { e.preventDefault(); onNext?.(); }} // ✅ navigate only
+          >
+            Generate
+          </button>
         </div>
       </div>
     </div>

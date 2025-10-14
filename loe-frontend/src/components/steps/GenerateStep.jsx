@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { generateLoE } from "../../lib/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -18,22 +18,29 @@ export default function GenerateStep({ schema, onBack }) {
   const [out, setOut] = useState(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const runId = useRef(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setErr(""); setLoading(true);
-      try {
-        const resp = await generateLoE(schema);
-        if (!cancelled) setOut(resp);
-      } catch (e) {
-        if (!cancelled) setErr(e.message || "Generate failed");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [schema]);
+    useEffect(() => {
+      let cancelled = false;
+      let done = false;
+
+      (async () => {
+        setErr(""); setLoading(true);
+        try {
+          if (done) return;
+          done = true; // guard inside the effect
+          const resp = await generateLoE(schema);
+          if (!cancelled) setOut(resp);
+        } catch (e) {
+          if (!cancelled) setErr(e.message || "Generate failed");
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
+      })();
+
+      return () => { cancelled = true; };
+    }, [schema]);
+
 
   const summary = useMemo(() => stripHeading(out?.summary, "PROJECT SUMMARY"), [out]);
   const tasks   = useMemo(() => stripHeading(out?.tasks,   "PROJECT TASKS"),   [out]);
@@ -134,7 +141,7 @@ export default function GenerateStep({ schema, onBack }) {
               </div>
             </div>
 
-            {/* Footer export bar (sticky near bottom of viewport) */}
+            {/* Footer export bar */}
             <div className="export-bar">
               <div className="export-bar-inner">
                 <span className="muted small">Export</span>

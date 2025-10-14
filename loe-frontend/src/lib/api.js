@@ -1,21 +1,43 @@
-export const API_BASE = "http://127.0.0.1:5050";
+// src/lib/api.js
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5050";
 
-export async function ingestLoE(text, loeType = "rack_stack") {
-  const res = await fetch("http://127.0.0.1:5050/ingest", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, loe_type: loeType })
-  });
-  if (!res.ok) throw new Error(`Ingest failed: ${res.status}`);
-  return res.json(); // { schema: {...} }
+async function _json(res) {
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${res.statusText} — ${text || "no body"}`);
+  }
+  return res.json();
 }
 
-export async function generateLoE(schema) {
-  const res = await fetch("http://127.0.0.1:5050/generate", {
+// ---- SINGLE-FLIGHT: dedupe concurrent/duplicate calls with identical body ----
+const inflight = new Map(); // key: stringified body -> Promise
+
+function singleFlightFetch(url, options) {
+  const key = JSON.stringify({ url, body: options?.body || "" });
+  if (inflight.has(key)) return inflight.get(key);
+
+  const p = fetch(url, options)
+    .then(_json)
+    .finally(() => inflight.delete(key));
+
+  inflight.set(key, p);
+  return p;
+}
+
+// ------------------ public API ------------------
+
+export async function ingestText(text, loeType) {
+  return singleFlightFetch(`${API_BASE}/ingest`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ schema })
+    body: JSON.stringify({ text, loe_type: loeType }),
   });
-  if (!res.ok) throw new Error(`Generate failed: ${res.status}`);
-  return res.json(); // { summary, tasks, open_questions }
+}
+
+export async function generateLoE(schema, loeType) {
+  return singleFlightFetch(`${API_BASE}/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ schema, loe_type: loeType || schema?.loe_type }),
+  });
 }
