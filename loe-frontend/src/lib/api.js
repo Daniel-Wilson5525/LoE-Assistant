@@ -1,5 +1,9 @@
 // src/lib/api.js
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5050";
+const isLocal = typeof window !== "undefined" && /^(localhost|127\.0\.0\.1)/.test(window.location.hostname);
+// Default to '/api' when NOT local (so Nginx can proxy), else use localhost:5050 in dev.
+const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  (isLocal ? "http://localhost:5050" : "/api");
 
 async function _json(res) {
   if (!res.ok) {
@@ -9,22 +13,15 @@ async function _json(res) {
   return res.json();
 }
 
-// ---- SINGLE-FLIGHT: dedupe concurrent/duplicate calls with identical body ----
-const inflight = new Map(); // key: stringified body -> Promise
+const inflight = new Map();
 
 function singleFlightFetch(url, options) {
   const key = JSON.stringify({ url, body: options?.body || "" });
   if (inflight.has(key)) return inflight.get(key);
-
-  const p = fetch(url, options)
-    .then(_json)
-    .finally(() => inflight.delete(key));
-
+  const p = fetch(url, options).then(_json).finally(() => inflight.delete(key));
   inflight.set(key, p);
   return p;
 }
-
-// ------------------ public API ------------------
 
 export async function ingestText(text, loeType) {
   return singleFlightFetch(`${API_BASE}/ingest`, {

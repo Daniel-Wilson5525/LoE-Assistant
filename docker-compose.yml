@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    container_name: loe-backend
+    env_file: .env
+    ports:
+      - "5050:5050"
+    networks:
+      - loenet
+    profiles: ["dev","prod"]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: loe-frontend/Dockerfile
+    container_name: loe-frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    networks:
+      - loenet
+    profiles: ["prod"]
+
+  # Optional hot-reload for dev
+  frontend-dev:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - ./loe-frontend:/app
+      - /app/node_modules
+    command: sh -c "npm ci && npm run dev"
+    environment:
+      - VITE_API_BASE=http://localhost:5050
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "5173:5173"
+    networks:
+      - loenet
+    depends_on:
+      - backend
+    profiles: ["dev"]
+
+networks:
+  loenet:
+    driver: bridge
