@@ -311,3 +311,26 @@ code {
 }
 .export-actions { display: inline-flex; gap: 8px; }
 
+/* =========================================================
+   Editor layout helpers
+   ========================================================= */
+
+.edit-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  align-items: flex-start;
+}
+
+/* Slightly denser panels – useful for small cards like tasks/BOM */
+.panel-compact .panel-header {
+  padding: 10px 14px;
+}
+
+.panel-compact .panel-body {
+  padding: 10px 14px 14px 14px;
+}
+
+.panel-compact .field + .field {
+  margin-top: 8px;
+}

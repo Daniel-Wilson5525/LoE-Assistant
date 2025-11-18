@@ -1,10 +1,169 @@
-Extract a JSON "schema" for a Level of Effort document from the email below.
+Extract a JSON "schema" for a Rack & Stack LoE from the email below.
 
 Email:
 {{EMAIL_TEXT}}
 
-Return a JSON object with fields like:
-client, project_name, service, scope, environment, timeline,
-sites (array of {name,address}), bom (array of {type,model,qty,notes}),
-staging, rollout, governance, visits_caps, counts, wave_plan, brackets,
-prerequisites, assumptions, out_of_scope, handover, constraints, deliverables.
+You MUST follow these rules:
+
+GENERAL SHAPE
+-------------
+- Always return a SINGLE JSON object with at least these top-level keys:
+
+  client, project_name, service, scope, environment, timeline,
+  sites,
+  bom,
+  global_scope,
+  effort_summary,
+  staging, rollout, governance, visits_caps, counts, wave_plan, brackets,
+  prerequisites, assumptions, out_of_scope, handover, constraints, deliverables, notes_raw
+
+- `sites` MUST ALWAYS be an array:
+  - Even if there is only one site, return a single-element array.
+  - Never put a site directly on the top level; always use sites[ ].
+
+PROJECT FIELDS
+--------------
+- `client`: name of the end customer if mentioned, else "".
+- `project_name`: the project name or description, e.g. "Core infrastructure replacement".
+- `service`: e.g. "Rack & Stack".
+- `scope`: short description like "UK data centre refresh".
+- `environment`: e.g. "Data centre", "Retail store", "Office", etc.
+- `timeline`: human-readable text describing dates or target completion.
+- `assumptions`, `constraints`, `out_of_scope`, `deliverables`, `prerequisites`:
+  - Arrays of strings at the top level for anything that applies globally.
+  - If an item is clearly specific to a single site, put it in that site's arrays instead.
+
+GLOBAL SCOPE
+------------
+- `global_scope` MUST be an object with these exact keys:
+  - rack_and_stack
+  - optics_installation
+  - site_survey
+  - post_install
+
+- Each of those keys MUST be an object with:
+  {
+    "include": true | false | null,
+    "notes": string
+  }
+
+- Set include=true if that activity is clearly required anywhere in the project.
+  - Example: if any site requires optics, set global_scope.optics_installation.include = true.
+
+- `notes` can be a short explanation, or "" if nothing special.
+
+SITES
+-----
+- `sites` is an array. For EACH site, extract:
+
+  {
+    "site_id": string,    // e.g. "Site 1", "Site 2", or a short identifier
+    "name": string,       // e.g. "London DC1"
+    "address": string,    // full address if present, else ""
+    "country": string,    // e.g. "UK" if stated or obvious from context, else ""
+    "constraints": string[],    // constraints specific to this site
+    "assumptions": string[],    // assumptions specific to this site
+    "out_of_scope": string[],   // exclusions specific to this site
+    "bom": object[],            // per-site BOM (see below)
+    "optics_bom": object[],     // per-site optics/optical links if applicable
+    "tasks": { ... }            // per-site tasks (see below)
+  }
+
+- If site IDs like "Site 1" or "Site 2" are mentioned, use those.
+- If not, create short, stable IDs like "site-1", "site-2" based on the order mentioned.
+
+PER-SITE BOM
+------------
+- Each site's `bom` MUST be an array of objects with at least:
+
+  {
+    "type":  string,   // e.g. "Server", "Switch", "Firewall"
+    "model": string,   // e.g. "Dell R650", "Arista 7050X"
+    "qty":   integer,  // number of units
+    "notes": string    // optional free text, or "" if none
+  }
+
+- Use the descriptions in the email to fill this.
+  Examples:
+    "Rack & stack 4x Dell R650 servers" =>
+      { "type": "Server", "model": "Dell R650", "qty": 4, "notes": "" }
+
+    "Install 2x Arista 7050X switches" =>
+      { "type": "Switch", "model": "Arista 7050X", "qty": 2, "notes": "" }
+
+- If BOM lines are clearly tied to a specific site, put them in that site's `bom`.
+- Only use the top-level `bom` for equipment that is clearly global and not associated with any single site.
+
+PER-SITE OPTICS BOM
+-------------------
+- If optics, SFPs, QSFPs, or "10Gb links" are mentioned for a site, use that site's `optics_bom`:
+
+  {
+    "type":  "Optics",
+    "model": string,      // e.g. "10Gb"
+    "qty":   integer|null,
+    "notes": string
+  }
+
+- If quantity is not stated, set "qty": null.
+
+TASKS
+-----
+- Each site MUST have a `tasks` object with exactly these keys:
+
+  {
+    "site_survey": {
+      "include": true|false|null,
+      "engineers": integer|null,
+      "days": float|null,
+      "steps": string[]
+    },
+    "installation": {
+      "include": true|false|null,
+      "engineers": integer|null,
+      "days": float|null,
+      "steps": string[]
+    },
+    "optics_installation": {
+      "include": true|false|null,
+      "engineers": integer|null,
+      "days": float|null,
+      "steps": string[]
+    },
+    "post_install": {
+      "include": true|false|null,
+      "engineers": integer|null,
+      "days": float|null,
+      "steps": string[]
+    }
+  }
+
+- Set `include` based on whether that activity is clearly mentioned for that site.
+- `engineers` and `days`:
+  - Only fill these when the email gives explicit numbers, e.g.:
+    - "Installation: 2 engineers, 1 day" ⇒ engineers=2, days=1
+  - If unknown, use null.
+- `steps` can be an empty array or a list of short bullet points.
+
+EFFORT SUMMARY
+--------------
+- `effort_summary` can be left as an empty object {}.
+- Do NOT make up total engineer days. If total effort is not explicitly given, leave `effort_summary` empty and let downstream logic derive it.
+
+OTHER FIELDS
+------------
+- `staging`, `rollout`, `governance`, `visits_caps`, `counts`, `wave_plan`, `brackets`, `handover`:
+  - Include these keys in the JSON.
+  - If not specified in the email, set sensible empty/default values:
+    - Strings: ""
+    - Arrays: []
+    - Objects: {}
+    - Numbers: null
+
+NOTES
+-----
+- `notes_raw` should be the full original email text as a string.
+- If any field is not mentioned, leave it null, empty string, or empty array as appropriate.
+- Never invent dates or numbers. Never infer engineer counts or days.
+
+Return ONLY the JSON object. No extra text, comments, or Markdown.

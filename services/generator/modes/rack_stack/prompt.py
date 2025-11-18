@@ -38,8 +38,13 @@ def build_prompt(schema: dict) -> str:
       • {{PRIMARY_SITE}} with the primary site line (Name — Address) or '(TBD)'.
       • {{BOM_TABLE}} keep as the exact token; do not remove. The backend will replace it.
       • {{DEVICE_TOTALS_SENTENCE}} replace with the exact sentence provided below.
-    - If the schema indicates something is already provided by the client or out of scope, remove that checklist line entirely.
+    - Use the GOLDEN TEMPLATE as the baseline for every section.
+    - Preserve all checklist items by default.
+    - Only remove individual bullets that are explicitly contradicted or marked redundant in the schema context.
+    - If the schema lists a few extra prerequisites or out-of-scope items, append them rather than deleting existing bullets.
+    - Do NOT shorten or rewrite sections arbitrarily — keep the structure, depth, and phrasing of the golden template.
     - Do NOT invent new sections; keep to the template only.
+
 
     ## Context
     Client: {schema.get('client','') or '(Client)'}

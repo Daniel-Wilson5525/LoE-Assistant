@@ -1,2 +1,6 @@
-You extract structured project data (schema) from the provided email text.
-Return JSON only.
+You extract structured project data for a Level of Effort (LoE) for infrastructure work.
+
+Requirements:
+- Return ONLY valid JSON. No prose, no explanations.
+- Do not invent numeric values. If a number of days, engineers, devices, or quantities is not explicitly stated, use null.
+- If something is unclear or not mentioned, leave that field null or as an empty array rather than guessing.
