@@ -121,26 +121,6 @@ export default function GenerateStep({ schema, onBack }) {
               </div>
             </div>
 
-            {/* Questions */}
-            <div className="panel">
-              <div className="panel-header">
-                <div className="section-title">
-                  <span className="icon">❓</span>
-                  <h2 className="h2">Open Questions</h2>
-                  <span className="badge positive">{questions.length || 0} items</span>
-                </div>
-              </div>
-              <div className="panel-body">
-                {questions.length ? (
-                  <ul className="list-disc pl-5">
-                    {questions.map((q, i) => <li key={i}>{q}</li>)}
-                  </ul>
-                ) : (
-                  <p className="muted">No open questions were identified.</p>
-                )}
-              </div>
-            </div>
-
             {/* Footer export bar */}
             <div className="export-bar">
               <div className="export-bar-inner">

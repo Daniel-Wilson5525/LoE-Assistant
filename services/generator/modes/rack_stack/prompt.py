@@ -62,5 +62,4 @@ def build_prompt(schema: dict) -> str:
     Return JSON ONLY with keys:
       "summary" (string) — begin with "### Project Summary"
       "tasks"   (string) — begin with "### Project Tasks"
-      "open_questions" (array of 4–8 strings).
     """).strip()
