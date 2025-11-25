@@ -23,6 +23,15 @@ _FE_BLOCK = (
     "- Laptop with connecting cable"
 )
 
+# Default Post-Installation Services bullets (used if in-scope but model is empty)
+_POST_INSTALL_LIBRARY = [
+    "Support initial go-live period for the newly installed equipment.",
+    "Assist with basic connectivity and reachability checks with the customer team.",
+    "Provide ad-hoc troubleshooting for hardware or cabling issues identified immediately after install.",
+    "Capture any defects or follow-up actions and hand them back to the project manager.",
+]
+
+
 # --- helpers ----------------------------------------------------------------
 
 _CHECKBOX_RE = re.compile(r"^(?P<prefix>\s*[-*•o])\s*\[(?: |x|X)\]\s*", flags=re.M)
@@ -337,19 +346,28 @@ def _filter_and_order_task_sections(tasks_md: str, schema: dict) -> str:
 
     ordered = []
     for h in _TASK_ORDER:
-        # Phase-level gating
+
+        # --- 1. Phase-level gating ---
         if h == "Site Survey (Site Visit 1)" and not _phase_in_scope(schema, "site_survey", "site_survey"):
             continue
 
         if h == "Installation (Site Visit 2)" and not _phase_in_scope(schema, "installation", "rack_and_stack"):
-            # If you *never* want an LoE without an Installation section, remove this `continue`.
             continue
 
         if h == "Post-Installation Services" and not _phase_in_scope(schema, "post_install", "post_install"):
             continue
 
+        # --- 2. Build body ---
         body = (found[h] or defaults[h]).strip()
+
+        # --- 3. SPECIAL CASE: Post-Install fallback library ---
+        if h == "Post-Installation Services":
+            # If in-scope AND empty → use fallback bullets
+            if not body or body == "- (none provided)":
+                body = "\n".join(f"- {item}" for item in _POST_INSTALL_LIBRARY)
+
         ordered.append((h, body))
+
 
     return _rebuild_sections(ordered)
 
