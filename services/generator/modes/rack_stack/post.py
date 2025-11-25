@@ -9,6 +9,7 @@ from services.generator.shared.derive import primary_site_line
 _TASK_ORDER = [
     "Site Survey (Site Visit 1)",
     "Installation (Site Visit 2)",
+    "Post-Installation Services",
     "Client Prerequisites",
     "Out of Scope",
 ]
@@ -284,41 +285,76 @@ def _rebuild_sections(sections):
         buff.append(f"### {h}\n{b}".rstrip())
     return "\n\n".join(buff).strip()
 
+def _phase_in_scope(schema: dict, site_phase_key: str, global_key: str | None = None) -> bool:
+    """
+    Return True if this phase is in scope anywhere:
+      - global_scope[global_key].include
+      - OR any site.tasks[site_phase_key].include
+    """
+    global_scope = schema.get("global_scope") or {}
+    gkey = global_key or site_phase_key
+    g_phase = (global_scope.get(gkey) or {})
+    if g_phase.get("include") is True:
+        return True
+
+    for site in (schema.get("sites") or []):
+        if not isinstance(site, dict):
+            continue
+        tasks = (site.get("tasks") or {}).get(site_phase_key) or {}
+        if tasks.get("include") is True:
+            return True
+
+    return False
+
 
 def _filter_and_order_task_sections(tasks_md: str, schema: dict) -> str:
     """
-    Keep ONLY the allowed headings in _TASK_ORDER (in that order). If any are missing,
-    create them with defaults from schema. Drop everything else.
+    Keep ONLY the allowed headings in _TASK_ORDER (in that order).
+
+    Phases are conditionally included:
+      - If a phase is not in scope anywhere (global + all sites), it is dropped.
+      - Otherwise we keep the model's body if present, or a sensible default.
     """
     tasks_md = _normalise_heading_levels_to_h3(tasks_md or "")
     found = {h: "" for h in _TASK_ORDER}
 
-    # Harvest existing sections that we allow
+    # Harvest existing sections from the model output
     for h, body in _split_sections(tasks_md):
         if h in found:
             found[h] = body.strip()
 
-    # Build defaults
-    prereqs = found["Client Prerequisites"] or _bullets_block(
-        schema.get("prerequisites")
-    )
-    oos = found["Out of Scope"] or _bullets_block(schema.get("out_of_scope"))
+    # Build defaults for sections that the model omitted
+    prereqs = found["Client Prerequisites"] or _bullets_block(schema.get("prerequisites"))
+    oos     = found["Out of Scope"]         or _bullets_block(schema.get("out_of_scope"))
 
     defaults = {
-        "Site Survey (Site Visit 1)": found["Site Survey (Site Visit 1)"]
-        or "- (none provided)",
-        "Installation (Site Visit 2)": found["Installation (Site Visit 2)"]
-        or "- (none provided)",
+        "Site Survey (Site Visit 1)": "- (none provided)",
+        "Installation (Site Visit 2)": "- (none provided)",
+        "Post-Installation Services": "- (none provided)",
         "Client Prerequisites": prereqs or "- (none provided)",
         "Out of Scope": oos or "- (none provided)",
     }
 
     ordered = []
     for h in _TASK_ORDER:
+        # Phase-level gating
+        if h == "Site Survey (Site Visit 1)" and not _phase_in_scope(schema, "site_survey", "site_survey"):
+            continue
+
+        if h == "Installation (Site Visit 2)" and not _phase_in_scope(schema, "installation", "rack_and_stack"):
+            # If you *never* want an LoE without an Installation section, remove this `continue`.
+            continue
+
+        if h == "Post-Installation Services" and not _phase_in_scope(schema, "post_install", "post_install"):
+            continue
+
         body = (found[h] or defaults[h]).strip()
         ordered.append((h, body))
 
     return _rebuild_sections(ordered)
+
+
+
 
 
 def _render_phase_per_site(
@@ -484,7 +520,8 @@ def post_process(schema: dict, result: dict) -> dict:
             body = _render_phase_per_site(schema, body, heading, "site_survey")
         elif heading == "Installation (Site Visit 2)":
             body = _render_phase_per_site(schema, body, heading, "installation")
-        # (You can later add optics_installation/post_install if you introduce those headings)
+        elif heading == "Post-Installation Services":
+            body = _render_phase_per_site(schema, body, heading, "post_install")
         new_sections.append((heading, body))
 
     tasks = _rebuild_sections(new_sections)

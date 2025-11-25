@@ -64,6 +64,15 @@ Partner will perform the following tasks:
 - [ ] Client to provide network cables
 - [ ] Client to provide power mapping matrix
 
+#### Post-Installation Services
+
+- [ ] Support basic post-installation verification activities where requested by the Customer.
+- [ ] Confirm devices remain powered, correctly cabled, and labelled as per as-built documentation.
+- [ ] Assist the Customer with simple connectivity checks (e.g. ping / basic reachability) where within scope.
+- [ ] Capture any defects, punch-list items, or follow-up actions and communicate them to the Project Manager.
+- [ ] Provide a brief summary of post-installation outcomes to feed into handover documentation.
+
+
 #### Out of Scope
 - [ ] Site remediation including, but not limited to, provisioning of rack space, cooling, and power; and troubleshooting of carrier circuits
 - [ ] Device wiping or erasing of any operating system (OS) and/or configurations
