@@ -460,6 +460,59 @@ def _tidy_key_tasks(summary: str) -> str:
         return summary or ""
     return re.sub(r"(?mi)^\s*[-*]\s*Key tasks:\s*\n", "", summary)
 
+def _prune_key_tasks_block(summary: str, schema: dict) -> str:
+    """
+    Make the 'Key tasks overview' list in the summary match what is actually
+    in scope in global_scope.
+
+    - If site_survey include=False -> drop any 'Site survey' bullet.
+    - If post_install include=False -> drop any 'Post-install' / 'Post-installation' bullets.
+    Everything else is left as-is.
+    """
+    if not summary:
+        return summary or ""
+
+    m = re.search(
+        r"(?mi)^(?P<header>\s*[-*]\s*Key tasks[^\n]*)(?P<body>(?:\n[ \t]*[-*]\s+.*)*)",
+        summary,
+    )
+    if not m:
+        return summary
+
+    header = m.group("header")
+    body   = m.group("body") or ""
+
+    lines = body.splitlines()
+    if not lines:
+        return summary
+
+    global_scope = schema.get("global_scope") or {}
+    site_survey_in_scope   = bool(global_scope.get("site_survey", {}).get("include"))
+    post_install_in_scope  = bool(global_scope.get("post_install", {}).get("include"))
+
+    kept_bullets = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith(("-", "*")):
+            # odd line, keep it
+            kept_bullets.append(line)
+            continue
+
+        text_l = stripped[1:].strip().lower()  # after '-'
+        if ("site survey" in text_l) and not site_survey_in_scope:
+            continue
+        if ("post-install" in text_l or "post installation" in text_l) and not post_install_in_scope:
+            continue
+
+        kept_bullets.append(line)
+
+    # If we somehow removed everything, just drop the whole block
+    if not kept_bullets:
+        return summary[: m.start()] + summary[m.end() :]
+
+    new_block = header + "\n" + "\n".join(kept_bullets)
+    return summary[: m.start()] + new_block + summary[m.end() :]
+
 
 # --- main -------------------------------------------------------------------
 
@@ -501,6 +554,9 @@ def post_process(schema: dict, result: dict) -> dict:
         summary = summary.replace("{{DEVICE_TOTALS_SENTENCE}}", device_totals)
     elif not re.search(r"\*\*Device totals:\*\*", summary, flags=re.I):
         summary += f"\n\n{device_totals}"
+
+    # Make sure 'Key tasks overview' reflects what is actually in scope
+    summary = _prune_key_tasks_block(summary, schema)
 
     # Final format cleanups for summary
     summary = _checkboxes_to_bullets(summary)
