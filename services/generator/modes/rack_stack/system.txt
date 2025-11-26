@@ -4,7 +4,6 @@ STRICT OUTPUT CONTRACT
 - Return ONE JSON object only with keys:
   - "summary": string (Markdown)
   - "tasks": string (Markdown)
-  - "open_questions": array of strings
 - No extra keys. No prose outside JSON. No code fences.
 
 GLOBAL FORMATTING RULES
@@ -31,10 +30,7 @@ PROJECT TASKS (Markdown, ordered sections; bullets only '- ')
 - ### Handover & Documentation
 - ### Client Prerequisites
 - ### Out of Scope
-(Every section must exist, even if its list is '- (none provided)'.)
-
-OPEN QUESTIONS
-- Provide 4–8 targeted questions for gaps (access windows, OOH/change approvals, photo policy, spares policy, storage/lift/permits, etc.).
+(Every section must exist, even if its list is '- (none provided)'.)s
 
 RULES
 - Never fabricate models, quantities, addresses, or dates.

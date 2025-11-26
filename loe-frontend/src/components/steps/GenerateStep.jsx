@@ -9,10 +9,10 @@ const stripHeading = (text = "", head = "PROJECT SUMMARY") =>
   String(text || "").replace(new RegExp(`^\\s*${head}\\s*\\n`, "i"), "");
 
 /** Build the full markdown for copy/download */
-function buildMarkdown(summary, tasks, questions = []) {
-  const q = questions.length ? `\n\n# Open Questions\n\n- ${questions.join("\n- ")}` : "";
-  return `# Project Summary\n\n${summary || ""}\n\n# Project Tasks\n\n${tasks || ""}${q}`;
+function buildMarkdown(summary, tasks = "") {
+  return `# Project Summary\n\n${summary || ""}\n\n# Project Tasks\n\n${tasks || ""}\n`;
 }
+
 
 export default function GenerateStep({ schema, onBack }) {
   const [out, setOut] = useState(null);
@@ -44,15 +44,14 @@ export default function GenerateStep({ schema, onBack }) {
 
   const summary = useMemo(() => stripHeading(out?.summary, "PROJECT SUMMARY"), [out]);
   const tasks   = useMemo(() => stripHeading(out?.tasks,   "PROJECT TASKS"),   [out]);
-  const questions = out?.open_questions || [];
 
   const copyAll = () => {
-    const text = buildMarkdown(summary, tasks, questions);
+    const text = buildMarkdown(summary, tasks);
     navigator.clipboard.writeText(text);
   };
 
   const downloadMd = () => {
-    const blob = new Blob([buildMarkdown(summary, tasks, questions)], { type: "text/markdown;charset=utf-8" });
+    const blob = new Blob([buildMarkdown(summary, tasks)], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = "LoE.md"; a.click();
@@ -82,7 +81,7 @@ export default function GenerateStep({ schema, onBack }) {
           </div>
         )}
 
-        {/* Stacked report: Summary → Tasks → Open Questions */}
+        {/* Stacked report: Summary → Tasks */}
         {out && !err && (
           <>
             {/* Summary */}
