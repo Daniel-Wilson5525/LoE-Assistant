@@ -2,11 +2,11 @@
    Design Tokens
    ========================================================= */
 :root {
-  --bg: #f9fafb;             /* app background */
+  --bg: #5988e7;             /* app background – deep navy */
   --surface: #ffffff;        /* surfaces/cards */
   --card: #ffffff;
 
-  --ink: #0f172a;            /* primary text */
+  --ink: #0f172a;            /* primary text on cards */
   --muted: #64748b;          /* secondary text */
 
   --brand: #4f46e5;          /* indigo-600 */
@@ -21,6 +21,7 @@
   --radius: 16px;            /* rounded-2xl vibe */
 }
 
+
 /* =========================================================
    Base & Layout
    ========================================================= */
@@ -30,9 +31,19 @@ html, body, #root { height: 100%; }
 body {
   margin: 0;
   color: var(--ink);
-  background: var(--bg);
-  font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
+  /* 🔵 Blue gradient background for the whole app */
+  background: linear-gradient(
+    180deg,
+    #1d3b8f 0%,    /* deep navy at top */
+    #5988e7 45%,   /* your main blue through middle */
+    #e5edff 100%   /* light blue at bottom */
+  );
+  background-attachment: fixed; /* keeps gradient in place when scrolling */
 }
+
 
 .container {
   max-width: 1100px;
@@ -105,9 +116,9 @@ code {
    ========================================================= */
 .topnav {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(255,255,255,.75);
+  background: rgba(255,255,255,.85);
   backdrop-filter: saturate(1.1) blur(6px);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.5);
 }
 .topnav-inner {
   max-width: 1100px; margin: 0 auto; padding: 12px 24px;
@@ -253,13 +264,17 @@ code {
 
 /* Bubble panels + chips */
 .panel {
-  background: #fff;
-  border: 1px solid rgba(15,23,42,0.06);
-  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
-    0 1px 2px rgba(16,24,40,.06),
-    0 8px 24px rgba(16,24,40,.06);
+    0 10px 30px rgba(15, 23, 42, 0.25),
+    0 1px 2px rgba(15, 23, 42, 0.06);
 }
+
+
+
+
 .panel-header { padding: 14px 18px 0 18px; }
 .panel-body   { padding: 12px 18px 18px 18px; }
 .panel + .panel { margin-top: 16px; }
