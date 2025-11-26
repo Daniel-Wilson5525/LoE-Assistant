@@ -215,7 +215,7 @@ code {
   padding: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0px;
 }
 
 /* Each item */
@@ -351,7 +351,14 @@ code {
   gap: 16px;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   align-items: flex-start;
+  margin-top: 16px; /* space between the big panel and this block */
 }
+
+/* Inside edit grids, don't add extra top margin between panels */
+.edit-grid .panel + .panel {
+  margin-top: 0;
+}
+
 
 /* Slightly denser panels – useful for small cards like tasks/BOM */
 .panel-compact .panel-header {
