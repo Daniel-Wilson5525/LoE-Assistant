@@ -382,16 +382,9 @@ function SchemaEditor({ schema, onSchemaChange }) {
             </h3>
           </div>
         </div>
-        <div
-          className="panel-body"
-          style={{
-            display: "grid",
-            gap: 12,
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          }}
-        >
+        <div className="panel-body project-overview-grid">
           {/* col 1 */}
-          <div className="form-grid">
+          <div className="project-overview-col">
             <label className="field">
               <span className="label">Client</span>
               <input
@@ -419,7 +412,7 @@ function SchemaEditor({ schema, onSchemaChange }) {
           </div>
 
           {/* col 2 */}
-          <div className="form-grid">
+          <div className="project-overview-col">
             <label className="field">
               <span className="label">Scope</span>
               <input
@@ -447,7 +440,7 @@ function SchemaEditor({ schema, onSchemaChange }) {
           </div>
 
           {/* col 3 */}
-          <div className="form-grid">
+          <div className="project-overview-col">
             <label className="field">
               <span className="label">LoE Type</span>
               <input className="input" value={s.loe_type || ""} readOnly />
@@ -482,6 +475,7 @@ function SchemaEditor({ schema, onSchemaChange }) {
             </label>
           </div>
         </div>
+
 
         <div className="panel-body">
           <label className="field" style={{ gridColumn: "1 / -1" }}>
