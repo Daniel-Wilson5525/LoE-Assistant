@@ -49,9 +49,14 @@ export default function RackStack() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold tracking-tight mb-1">Rack &amp; Stack Assistant</h1>
-      <p className="text-slate-600 mb-4">Draft PROJECT SUMMARY and PROJECT TASKS from client requests.</p>
+    <div className="max-w-6xl mx-auto py-8 px-4 assistant-header">
+      <h1 className="text-3xl font-bold tracking-tight mb-1">
+        Rack &amp; Stack Assistant
+      </h1>
+
+      <p className="assistant-subtitle mb-4">
+        Draft PROJECT SUMMARY and PROJECT TASKS from client requests.
+      </p>
 
       <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur p-4 mb-6">
         <div className="flex items-center justify-between">

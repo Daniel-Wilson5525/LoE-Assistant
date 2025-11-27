@@ -183,13 +183,9 @@ function SiteCard({ index, site, onChange }) {
         </div>
 
         {/* BOM + optics */}
-        <div
-          style={{
-            display: "grid",
-            gap: 12,
-            gridTemplateColumns: "2fr 1fr",
-          }}
-        >
+        <div className="panel-row">
+
+        
           {/* BOM */}
           <div className="panel">
             <div className="panel-header">
@@ -343,6 +339,7 @@ function SiteCard({ index, site, onChange }) {
 
         {/* tasks */}
         <div
+          className="tasks-grid"
           style={{
             display: "grid",
             gap: 12,
@@ -727,7 +724,7 @@ export default function EditStep({ schema, onSchemaChange, onNext }) {
       <SchemaEditor schema={schema} onSchemaChange={onSchemaChange} />
 
       {/* raw JSON editor */}
-      <div className="panel">
+      <div className="panel panel-spaced">
         <div className="panel-header">
           <div className="section-title">
             <span className="icon">{"</>"}</span>

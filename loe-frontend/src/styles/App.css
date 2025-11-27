@@ -271,9 +271,6 @@ code {
     0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
-
-
-
 .panel-header { padding: 14px 18px 0 18px; }
 .panel-body   { padding: 12px 18px 18px 18px; }
 .panel + .panel { margin-top: 16px; }
@@ -354,11 +351,38 @@ code {
   margin-top: 16px; /* space between the big panel and this block */
 }
 
+/* Space between an edit block (Global Scope + Governance) and the next panel (Sites) */
+.edit-grid + .panel {
+  margin-top: 16px;
+}
+
 /* Inside edit grids, don't add extra top margin between panels */
 .edit-grid .panel + .panel {
   margin-top: 0;
 }
 
+/* In the tasks grid, give the first task panel the same top margin as the others */
+.tasks-grid .panel:first-child {
+  margin-top: 16px;
+}
+
+/* Row of child panels (BOM + Optics) */
+.panel-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 2fr 1fr; /* BOM wider */
+  margin-top: 16px;              /* gap above the row */
+}
+
+/* Keep both BOM + Optics aligned at the top */
+.panel-row .panel + .panel {
+  margin-top: 0;
+}
+
+/* Extra top spacing for standalone panels like Full Schema */
+.panel-spaced {
+  margin-top: 16px;
+}
 
 /* Slightly denser panels – useful for small cards like tasks/BOM */
 .panel-compact .panel-header {
@@ -371,4 +395,51 @@ code {
 
 .panel-compact .field + .field {
   margin-top: 8px;
+}
+
+/* =========================================================
+   Home Page layout helpers
+   ========================================================= */
+
+/* Home hero section on blue gradient */
+.home-hero {
+  padding-top: 80px;
+  padding-bottom: 120px;
+  color: #f1f5ff; /* fallback light text */
+}
+
+/* Make the heading pop */
+.home-hero .h1 {
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Subtitle text (replace muted grey with soft blue) */
+.hero-subtitle {
+  color: #c1d7f5; /* light-blue */
+  max-width: 420px;
+  font-size: 15px;
+}
+
+/* Hero button tweaks for contrast on deep blue */
+.hero-btn {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* =========================================================
+   Assistant Page layout helpers
+   ========================================================= */
+
+
+/* Assistant page header on blue gradient */
+.assistant-header h1 {
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Subtitle for assistant pages */
+.assistant-subtitle {
+  color: #dbeafe;          /* light-blue, readable on blue gradient */
+  font-size: 15px;
+  max-width: 620px;
 }
