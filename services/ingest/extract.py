@@ -1,6 +1,8 @@
 # services/ingest/extract.py
 import json, re, os
 from services.prompt_loader import load_prompt_file
+from services.generator.shared.rack_units import enrich_schema_rack_units
+
 
 # Import classes only (choose at runtime)
 from adapters.mock_client import AIClient as MockAIClient
@@ -103,4 +105,5 @@ def extract_fields(email_text: str) -> dict:
 
     # Single place to clean + coerce everything
     data = normalize_schema(data)
+    data = enrich_schema_rack_units(data)
     return data

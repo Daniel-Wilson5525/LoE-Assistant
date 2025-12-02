@@ -242,6 +242,23 @@ function SiteCard({ index, site, onChange }) {
                       }}
                     />
                   </label>
+                  <label className="field">
+                    <span className="label">Rack Units</span>
+                    <input
+                      className="input"
+                      type="number"
+                      value={row.rack_unit ?? ""}
+                      onChange={(e) => {
+                        const next = bom.slice();
+                        next[i] = {
+                          ...row,
+                          rack_unit:
+                            e.target.value === "" ? null : Number(e.target.value),
+                        };
+                        set(["bom"], next);
+                      }}
+                    />
+                  </label>
                   <label className="field" style={{ gridColumn: "1 / -1" }}>
                     <span className="label">Notes</span>
                     <textarea
@@ -257,6 +274,7 @@ function SiteCard({ index, site, onChange }) {
                   </label>
                 </div>
               ))}
+
               <div
                 className="panel-actions"
                 style={{ justifyContent: "flex-end" }}
@@ -324,13 +342,13 @@ function SiteCard({ index, site, onChange }) {
                   type="button"
                   className="btn"
                   onClick={() =>
-                    set(["optics_bom"], [
-                      ...optics,
-                      { model: "", type: "Optics", qty: null, notes: "" },
+                    set(["bom"], [
+                      ...bom,
+                      { model: "", type: "", qty: null, rack_units: null, notes: "" },
                     ])
                   }
                 >
-                  + Add Optic
+                  + Add Item
                 </button>
               </div>
             </div>

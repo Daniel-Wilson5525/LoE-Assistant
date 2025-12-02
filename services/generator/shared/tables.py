@@ -51,11 +51,19 @@ def bom_table_markdown(schema: dict, include_rack_unit: bool = False) -> str:
         except Exception:
             qty = 0
 
-        ru_val = r.get("rack_unit") if r.get("rack_unit") is not None else r.get("ru")
+        # Prefer modern 'rack_units'; fall back to legacy 'rack_unit' / 'ru'
+        if r.get("rack_units") is not None:
+            ru_val = r.get("rack_units")
+        elif r.get("rack_unit") is not None:
+            ru_val = r.get("rack_unit")
+        else:
+            ru_val = r.get("ru")
+
         if isinstance(ru_val, str):
             ru = ru_val.strip()
         else:
             ru = ru_val if ru_val not in (None, "") else ""
+
 
         # Skip rows with no identifier or zero qty
         if not ((pn or typ) and qty > 0):
