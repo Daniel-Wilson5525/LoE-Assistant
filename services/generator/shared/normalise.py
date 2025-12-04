@@ -43,17 +43,62 @@ def stringify_mapping(m):
         return "; ".join(parts)
     return trim(m)
 
-def coerce_json(text: str) -> dict:
-    if not isinstance(text, str): return {}
-    t = re.sub(r"^\s*```(?:json)?\s*", "", text.strip(), flags=re.I)
-    t = re.sub(r"\s*```\s*$", "", t, flags=re.I)
-    try: return json.loads(t)
+# Regex to grab the biggest JSON-looking block
+_JSON_OBJECT_RE = re.compile(r"\{.*\}", re.DOTALL)
+
+
+def coerce_json(text):
+    """
+    Try *really hard* to turn an LLM response into a Python dict.
+
+    Handles:
+      - Plain JSON
+      - JSON wrapped in ```json ... ``` fences
+      - Extra prose before/after the JSON
+    Returns:
+      - dict on success
+      - None on failure
+    """
+    # Already parsed?
+    if isinstance(text, dict):
+        return text
+
+    if text is None:
+        return None
+
+    s = str(text).strip()
+    if not s:
+        return None
+
+    # 1) Strip code fences like ```json ... ```
+    # Leading fence
+    if s.startswith("```"):
+        # remove the first line (``` or ```json)
+        s = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", s, count=1, flags=re.MULTILINE)
+        # remove a trailing ``` if present
+        s = re.sub(r"```$", "", s.strip(), count=1, flags=re.MULTILINE).strip()
+
+    # 2) First attempt: parse as-is
+    try:
+        obj = json.loads(s)
+        if isinstance(obj, dict):
+            return obj
     except Exception:
-        m = re.search(r"\{.*\}", t, flags=re.DOTALL)
-        if m:
-            try: return json.loads(m.group(0))
-            except Exception: pass
-    return {}
+        pass
+
+    # 3) Fallback: extract the largest {...} block and try that
+    m = _JSON_OBJECT_RE.search(s)
+    if m:
+        candidate = m.group(0)
+        try:
+            obj = json.loads(candidate)
+            if isinstance(obj, dict):
+                return obj
+        except Exception:
+            pass
+
+    # 4) Give up
+    return None
 
 
 def _sum_devices_from_sites(s: dict) -> int | None:
@@ -376,8 +421,9 @@ def normalize_schema(s: dict) -> dict:
     if len(s["notes_raw"]) > 3000:
         s["notes_raw"] = s["notes_raw"][:3000]
 
-    # Wave plan – force list
-    s["wave_plan"] = s.get("wave_plan") if isinstance(s["wave_plan"], list) else []
+    wave_plan = s.get("wave_plan")
+    s["wave_plan"] = wave_plan if isinstance(wave_plan, list) else []
+
 
     # ---- Auto-derive counts.devices_total from per-site BOMs ----
     total = s.get("counts", {}).get("devices_total")

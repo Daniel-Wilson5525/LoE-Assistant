@@ -78,9 +78,16 @@ def _coerce_json_or_empty(text: str) -> dict:
     Uses the shared coerce_json from normalise.py to strip code fences, etc.
     """
     obj = _coerce_llm_json(text)
+
+    print("[DEBUG] coerce_json type:", type(obj))
+
     if isinstance(obj, dict):
+        print("[DEBUG] coerce_json keys:", list(obj.keys()))
         return obj
+
+    print("[DEBUG] coerce_json failed, falling back to _empty_schema")
     return _empty_schema()
+
 
 
 def extract_fields(email_text: str) -> dict:
@@ -92,18 +99,34 @@ def extract_fields(email_text: str) -> dict:
     content = load_prompt_file("services/ingest/prompts", "content.txt").replace("{{EMAIL_TEXT}}", email_text)
 
     client = _get_client()
-    # If your AIClient supports json_mode=True, you can flip this to reduce parsing fragility.
     raw = client.complete(
         content,
         system=system,
         json_mode=False,
-        max_tokens=2500,
+        max_tokens=6000,
     )
 
+    # TEMP: debug
+    print("=== RAW LLM OUTPUT (first 1000 chars) ===")
+    print(raw[:1000])
+    print("=== END RAW ===")
+
     data = _coerce_json_or_empty(raw)
+
+    # 🔍 DEBUG: see what the LLM JSON actually contains **before** normalize_schema
+    try:
+        print("[DEBUG] pre-normalize client:", data.get("client"))
+        print("[DEBUG] pre-normalize sites len:", len(data.get("sites") or []))
+        if (data.get("sites") or []):
+            print("[DEBUG] pre-normalize first site keys:",
+                list((data.get("sites") or [{}])[0].keys()))
+    except Exception as e:
+        print("[DEBUG] pre-normalize debug failed:", e)
+
     data["notes_raw"] = email_text
 
     # Single place to clean + coerce everything
     data = normalize_schema(data)
     data = enrich_schema_rack_units(data)
     return data
+

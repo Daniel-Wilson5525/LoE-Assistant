@@ -36,14 +36,6 @@ export const DEFAULT_SCHEMA = {
   // Top-level BOM is intentionally unused now
   bom: [],
 
-  // Global toggles
-  global_scope: {
-    rack_and_stack:      { include: true,  notes: "" },
-    site_survey:         { include: null, notes: "" },
-    optics_installation: { include: null, notes: "" },
-    post_install:        { include: null, notes: "" },
-  },
-
   // Misc
   notes_raw: "",
 

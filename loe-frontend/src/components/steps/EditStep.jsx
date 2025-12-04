@@ -553,68 +553,8 @@ function SchemaEditor({ schema, onSchemaChange }) {
         </div>
       </div>
 
-      {/* GLOBAL SCOPE + GOVERNANCE/HANDOVER */}
+      {/* GOVERNANCE/HANDOVER */}
       <div className="edit-grid">
-        {/* global scope */}
-        <div className="panel panel-compact">
-          <div className="panel-header">
-            <div className="section-title">
-              <span className="icon">🌐</span>
-              <h3 className="h3" style={{ margin: 0 }}>
-                Global Scope
-              </h3>
-            </div>
-          </div>
-          <div
-            className="panel-body"
-            style={{ display: "grid", gap: 8 }}
-          >
-            {["rack_and_stack", "site_survey", "optics_installation", "post_install"].map(
-              (key) => {
-                const row = s.global_scope?.[key] || {};
-                const label = key
-                  .replace(/_/g, " ")
-                  .replace(/\b\w/g, (m) => m.toUpperCase());
-                return (
-                  <div key={key} className="field">
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={!!row.include}
-                        onChange={(e) =>
-                          set(
-                            ["global_scope", key, "include"],
-                            e.target.checked,
-                          )
-                        }
-                      />
-                      <span className="label">{label}</span>
-                    </div>
-                    <textarea
-                      className="textarea"
-                      rows={2}
-                      placeholder="Notes (optional)"
-                      value={row.notes || ""}
-                      onChange={(e) =>
-                        set(
-                          ["global_scope", key, "notes"],
-                          e.target.value,
-                        )
-                      }
-                    />
-                  </div>
-                );
-              },
-            )}
-          </div>
-        </div>
-
         {/* governance + handover */}
         <div className="panel panel-compact">
           <div className="panel-header">
@@ -681,32 +621,23 @@ function SchemaEditor({ schema, onSchemaChange }) {
       </div>
 
       {/* SITES */}
-      <div className="panel">
-        <div className="panel-header">
-          <div className="section-title">
-            <span className="icon">🏢</span>
-            <h3 className="h3" style={{ margin: 0 }}>
-              Sites
-            </h3>
-          </div>
-          <p className="hint">One card per site</p>
-        </div>
-        <div
-          className="panel-body"
-          style={{ display: "grid", gap: 16 }}
-        >
-          {sites.map((site, idx) => (
-            <SiteCard
-              key={idx}
-              index={idx}
-              site={site}
-              onChange={(path, value) => {
-                const fullPath = ["sites", idx, ...path];
-                set(fullPath, value);
-              }}
-            />
-          ))}
-        </div>
+      <div
+        style={{
+          display: "grid",
+          marginTop: 16,
+        }}
+      >
+        {sites.map((site, idx) => (
+          <SiteCard
+            key={idx}
+            index={idx}
+            site={site}
+            onChange={(path, value) => {
+              const fullPath = ["sites", idx, ...path];
+              set(fullPath, value);
+            }}
+          />
+        ))}
       </div>
     </div>
   );
