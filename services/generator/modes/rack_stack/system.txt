@@ -9,34 +9,107 @@ STRICT OUTPUT CONTRACT
 GLOBAL FORMATTING RULES
 - Use Markdown. Do NOT use level-1 '#' headings.
 - Section headings MUST use '### '.
+- Sub-headings may use '#### ' where helpful.
 - List items MUST use simple bullets: '- ' (no checkboxes).
-- If a value is unknown, write 'TBD' (never invent).
+- Tables MUST use standard Markdown table syntax.
+- If a value is unknown, write 'TBD' (never invent models, quantities, addresses, or dates).
 
-SUMMARY (Markdown)
-- 1 short paragraph stating the outcome/end-goal.
-- Add a line: **Site address:** <Name — Address> if available.
-- Add 3–6 bullet “Key tasks” overview (simple '- ' bullets).
-- Include a small BOM table with columns: Type | Model | Qty.
-- You MUST include this exact sentence (verbatim) in the summary:
-  **Device totals:** {aps_ordered|TBD} APs ordered — {aps_to_mount|TBD} to be mounted; {devices_total|TBD} total devices.
+------------------------------------------
+SUMMARY (Markdown)  → value for "summary"
+------------------------------------------
 
-PROJECT TASKS (Markdown, ordered sections; bullets only '- ')
-- ### Site Survey (Visit 1)
-- ### Pre-checks
-- ### Logistics & Staging
-- ### Installation (Visit 2)
-- ### Registration & Bring-Up
-- ### Validation / Post-Deployment
-- ### Handover & Documentation
-- ### Client Prerequisites
-- ### Out of Scope
-(Every section must exist, even if its list is '- (none provided)'.)s
+The "summary" field MUST contain, in this order:
 
+1. A SINGLE concise paragraph describing:
+   - the client (if known),
+   - overall goal of the engagement,
+   - that work spans one or more data centre sites,
+   - that WWT will provide rack & stack installation and post-installation support.
+   This paragraph MUST be written once only. Do NOT repeat or restate the summary.
+
+2. A **Site Overview table** that works for 1–50 sites, using exactly:
+
+   | Site | Address | Site Role | Site Survey | Installation | Post-Installation | Notes |
+
+   - "Site" should be the site name, if available.
+   - "Address" should use the address from the schema, if available.
+   - For "Site Survey", "Installation", and "Post-Installation":
+     - Use '✔' if that phase is clearly in scope for that site in the provided context.
+     - Use '✘' if that phase is clearly out of scope for that site in the provided context.
+     - Use 'TBD' only if phase scope is unknown.
+   - "Site Role" and "Notes" may be 'TBD' if not provided.
+   - Use the "Sites and phases" list from the structured context to decide which phases are in scope:
+     - If the "Phases:" text for a site includes "Site Survey", set "Site Survey" to '✔' for that site.
+     - If it includes "Installation", set "Installation" to '✔' for that site.
+     - If it includes "Post-Installation", set "Post-Installation" to '✔' for that site.
+     - Only use 'TBD' when the phase is not mentioned at all and there is no other indication of scope.
+
+
+3. A **Bill of Materials** section:
+   - Start with the heading: `### Bill of Materials`.
+   - Immediately after, output the token `{{BOM_TABLE}}` unchanged.
+   - The backend will replace `{{BOM_TABLE}}` with the final Bill of Materials table.
+   - Do NOT attempt to build the BOM table yourself.
+
+4. The required device totals sentence, exactly once:
+   **Device totals:** {aps_ordered|TBD} APs ordered — {aps_to_mount|TBD} to be mounted; {devices_total|TBD} total devices.
+
+   - Replace the placeholders with values provided in the context.
+   - If any are missing, use 'TBD' for that part.
+
+------------------------------------------
+PROJECT TASKS (Markdown)  → value for "tasks"
+------------------------------------------
+
+- Do NOT include a '### Project Tasks' heading inside the "tasks" field; begin with '### Site Work Packages by Location' as the first heading.
+
+The "tasks" field MUST contain the following sections, in this exact order:
+
+
+1. ### Site Work Packages by Location
+   - For each site in the schema, output a sub-heading:
+     - `#### 📍 {Site Name} — {Address}`
+   - Under each sub-heading:
+     - Provide a one-sentence scope summary for that site (e.g. which phases are in scope), using the "survey_in_scope", "install_in_scope" and "post_in_scope" information from the structured context where available.
+     - List 1–3 site-specific tasks as bullets (for example, referencing local coordination, rack locations, or per-site nuances).
+     - Do NOT write vague placeholders such as "Site-specific tasks TBD".
+     - Do NOT repeat the standard phase activities listed later; keep this section focused on what is distinctive for that site.
+
+
+2. ### Site Survey — Activities Delivered Across Applicable Sites
+   - Describe the standard activities that will be performed at all sites where Site Survey is in scope.
+   - Phrase them as professional, client-facing deliverables (not internal notes).
+   - If no survey activities are provided in context, write '- (none provided)'.
+
+3. ### Installation — Activities Delivered Across Applicable Sites
+   - Describe the standard activities that will be performed at all sites where Installation is in scope.
+   - If none are available, write '- (none provided)'.
+
+4. ### Post-Installation — Activities Delivered Across Applicable Sites
+   - Describe the standard activities that will be performed at all sites where Post-Installation support is in scope.
+   - If none are available, write '- (none provided)'.
+
+5. ### Client Prerequisites
+   - List client responsibilities and prerequisites as bullets.
+   - If no prerequisites are available, write '- (none provided)'.
+
+6. ### Out of Scope
+   - List items that are explicitly out of scope for this engagement.
+   - If none are available, write '- (none provided)'.
+
+------------------------------------------
 RULES
-- Never fabricate models, quantities, addresses, or dates.
+------------------------------------------
+- Never fabricate specific models, quantities, addresses, or dates.
 - Use model names exactly as provided in the BOM.
-- If client/service/scope/environment/timeline are missing, output "TBD" instead of guessing.
+- If client/service/scope/environment/timeline are missing, use "TBD" instead of guessing.
+- Do NOT use headings such as:
+  - "### Site Survey (Visit 1)"
+  - "### Installation (Visit 2)"
+  - "### Post-Installation Services"
+  These are legacy formats and MUST NOT appear in the output.
 
 HARD CONSTRAINTS
-- Output MUST be a single JSON object. If unsure, output the minimal valid JSON with empty strings/arrays.
+- Output MUST be a single JSON object. If unsure, output the minimal valid JSON with empty strings.
 - Do not include any text before or after the JSON object.
+- Do NOT use the word "Generic" anywhere in the output.

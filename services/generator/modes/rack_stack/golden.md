@@ -1,89 +1,68 @@
 ### Project Summary
 
-<Please write a brief narrative/summary of the project. This will be inserted within the SOW.>
-{{CLIENT}} require the physical installation and labelling of network/server equipment within their data centre(s). The partner will perform the installation tasks end-to-end, including pre-checks, physical install, bring-up, validation, and handover, aligned to agreed change windows and site policies.
+Below is a high-level overview of participating sites (example layout):
 
-**Primary site:** {{PRIMARY_SITE}}
 
-**Field Engineer is expected to provide industry-standard tools including but not limited to:**
-- [ ] Basic Hand Tools
-- [ ] Labelling Printer
-- [ ] Ladder
-- [ ] Laptop with connecting cable
+| Site        | Address                          | Site Role | Site Survey | Installation | Post-Installation | Notes                |
+|------------|-----------------------------------|----------|:-----------:|:------------:|:-----------------:|----------------------|
+| Example DC1 | 10 Example Way, London, E1 1AA   | Primary  | ✔           | ✔            | ✔                 | Main production site |
+| Example DC2 | 20 Example Street, Manchester M1 | Secondary| ✘           | ✔            | ✔                 | No survey in scope   |
 
-**Bill Of Materials**
+### Bill of Materials
+
 {{BOM_TABLE}}
 
-> {{DEVICE_TOTALS_SENTENCE}}
+**Device totals:** {{DEVICE_TOTALS_SENTENCE}}
 
 ---
 
-### Project Tasks
+### Site Work Packages by Location
 
-#### Site Survey (Site Visit 1)
-- [ ] Site Survey may need to be scheduled up to four (4) weeks before installation as appropriate.
-- [ ] Verify that the Customer has a suitable environment for the equipment to be installed, housed, and maintained.
-- [ ] Perform a physical onsite Site Survey at each Customer Site (walk-through with Customer and partner engineer).
-- [ ] Cover in the Site Survey report:
-  - [ ] Confirmation of health and safety requirements
-  - [ ] Confirmation of access for the site
-  - [ ] Confirmation of data provisions for the site
-  - [ ] Confirmation of electrical provision for the site, including sufficient receptacles available on PDU
-  - [ ] Confirmation of cabling provision for the site
-  - [ ] Confirmation of space availability and condition
-  - [ ] Confirmation of environmental conditions for the site
-  - [ ] Photographs of key aspects of the site, if allowed
-  - [ ] Complete and submit the Site Survey Report
+#### 📍 Example DC1 — 10 Example Way, London, E1 1AA
+- Site survey, installation and post-installation support in scope at this location.
+- Rack and stack of new compute and network devices in designated racks.
+- Cabling and labelling aligned to the client’s standards.
 
-#### Installation (Site Visit 2)
-Partner will perform the following tasks:
-- [ ] Receive and inventory the equipment
-  - [ ] Check boxes for any damage/triggered tilts and advise the Customer of any faults
-- [ ] Unbox equipment and check for physical damage
-- [ ] Validate equipment model and quantity against delivery order or Bill-of-Material (BOM)
-- [ ] Document loose accessories/modules (module cards and SFP/QSFP transceivers) and quantity
-- [ ] Verify customer-specific asset tag and device hostname label before installation (Customer assists to print/label when required)
-- [ ] Install modules/SFPs as per build document and cabling matrix
-- [ ] Perform the physical installation and cabling of equipment as per rack elevation diagram and cabling plan
-- [ ] Patch network cables per cabling matrix, when required
-- [ ] Print and label power cords, when required
-- [ ] Install earthing cable for all large equipment, when required
-- [ ] Connect power cords as per power mapping
-- [ ] Power on devices for green-light check, including sub-modules (line card/supervisor/power supplies); notify PM of any faults
-- [ ] If RMA/DOA is required, assist to replace equipment (may require a visit outside of project timeframe depending on OEM parts availability; handled via Change Order process)
-- [ ] Review validation of connectivity with Customer
-- [ ] Complete Customer-provided QA checklist to ensure installation aligns with Customer build documents
-- [ ] Validate task completion and receive sign-off
-- [ ] Engineers can take photographs of devices in the rack (if allowed in the data centre)
-- [ ] Flatten boxes and place at Customer-designated disposal area
+#### 📍 Example DC2 — 20 Example Street, Manchester, M1
+- Installation and post-installation support in scope (no dedicated survey).
+- Coordinate with local operations team for rack positions and power feeds.
 
-#### Client Prerequisites
-- [ ] Client to provide SFP slotting matrix
-- [ ] Client to provide rack layout matrix
-- [ ] Client to provide cabling matrix
-- [ ] Client to provide network cables
-- [ ] Client to provide power mapping matrix
+---
 
-#### Post-Installation Services
+### Site Survey — Activities Delivered Across Applicable Sites
+- Validate environment readiness, including rack space, power, cooling, and physical access.
+- Confirm health and safety requirements and any permit or escort needs.
+- Review cabling routes, PDUs, labelling standards, and onsite restrictions.
+- Capture photographs if permitted by site policy.
+- Produce and submit a Site Survey Report summarising readiness and recommendations.
 
-- [ ] Support basic post-installation verification activities where requested by the Customer.
-- [ ] Confirm devices remain powered, correctly cabled, and labelled as per as-built documentation.
-- [ ] Assist the Customer with simple connectivity checks (e.g. ping / basic reachability) where within scope.
-- [ ] Capture any defects, punch-list items, or follow-up actions and communicate them to the Project Manager.
-- [ ] Provide a brief summary of post-installation outcomes to feed into handover documentation.
+### Installation — Activities Delivered Across Applicable Sites
+- Receive and verify all delivered hardware against the shipment list or BOM.
+- Inspect for damage and escalate issues to the Project Manager.
+- Rack equipment in the agreed U positions and install modules/optics as required.
+- Patch power and network cabling in accordance with provided matrices.
+- Perform power-on and operational status checks.
+- Complete customer QA checklist and provide updates to project management.
+- Ensure installation space is left clean and orderly.
 
+### Post-Installation — Activities Delivered Across Applicable Sites
+- Support initial reachability and connectivity checks with the customer team.
+- Validate power, cabling, and labelling against planned documentation.
+- Capture as-built rack elevations and photographs where allowed.
+- Document any defects, risks, or follow-up actions.
 
-#### Out of Scope
-- [ ] Site remediation including, but not limited to, provisioning of rack space, cooling, and power; and troubleshooting of carrier circuits
-- [ ] Device wiping or erasing of any operating system (OS) and/or configurations
-- [ ] Testing of, or access to, existing installed devices
-- [ ] Configuration development or applying configurations to any devices
-- [ ] Lift requirements: no work that requires the use of lifts
-- [ ] Equipment removal: no removal of decommissioned gear from the project site
-- [ ] Electric power installations: no work that requires electric power installations
-- [ ] Conduit installation: no cable installations requiring conduit
-- [ ] Rack/cabinet installations: no rack or cabinet installations
-- [ ] No materials are provided as part of this engagement including small consumables such as zip ties and Velcro
-- [ ] Server lifts: no server lifts are provided
-- [ ] Field terminations are limited to continuity testing only; no cable certifications
-- [ ] Certification/Validation: no certification or validation for copper or fiber cables
+### Client Prerequisites
+- Provide agreed change windows per site.
+- Supply rack layouts, cabling matrices, and power mapping information.
+- Confirm all hardware is onsite and secured before WWT attendance.
+- Arrange site access and escort requirements.
+- Provide remote bridge access for coordination where required.
+
+### Out of Scope
+- Site remediation (power, cooling, rack space, structured cabling).
+- Logical configuration of switches/firewalls/servers.
+- Wi-Fi RF design or heatmapping.
+- Removal or disposal of legacy equipment.
+- Electrical installation beyond connecting to existing PDUs.
+- Cable certification (only continuity checks performed).
+- Any activity not expressly included in this LOE.

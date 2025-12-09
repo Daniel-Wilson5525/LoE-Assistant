@@ -5,15 +5,6 @@ from services.generator.shared.derive import primary_site_line
 
 # --- constants --------------------------------------------------------------
 
-# The ONLY task sections we want to keep (in this order)
-_TASK_ORDER = [
-    "Site Survey (Site Visit 1)",
-    "Installation (Site Visit 2)",
-    "Post-Installation Services",
-    "Client Prerequisites",
-    "Out of Scope",
-]
-
 # Default Field Engineer tools (always inject if missing)
 _FE_BLOCK = (
     "**Field Engineer is expected to provide industry-standard tools including but not limited to:**\n"
@@ -23,18 +14,96 @@ _FE_BLOCK = (
     "- Laptop with connecting cable"
 )
 
-# Default Post-Installation Services bullets (used if in-scope but model is empty)
-_POST_INSTALL_LIBRARY = [
+# Match any reasonable variant of the BOM token:
+# '{{BOM_TABLE}}', '{BOM_TABLE}', '(BOM_TABLE)', or bare 'BOM_TABLE'
+_BOM_TOKEN_RE = re.compile(r"\{?\(?\s*BOM_TABLE\s*\)?\}?")
+
+# Regex for markdown tables (header + separator + one or more data rows)
+_TABLE_BLOCK_RE = re.compile(
+    r"(?ms)^\|.*\n\|[^\n]*\n(?:\|.*\n)+"
+)
+
+# Checkbox bullets like '- [ ] Task' / '* [x] Done'
+_CHECKBOX_RE = re.compile(r"^(?P<prefix>\s*[-*•o])\s*\[(?: |x|X)\]\s*", flags=re.M)
+
+# Default Site Survey bullets (used if the model leaves the section empty / '- (none provided)')
+_SITE_SURVEY_DEFAULT = [
+    "Site Survey may need to be scheduled up to four (4) weeks before installation as appropriate.",
+    "Verify that the Customer has a suitable environment for the equipment to be installed, housed, and maintained.",
+    "Perform a physical onsite Site Survey at each Customer Site (walk-through with Customer and WWT engineer).",
+    "Cover in the Site Survey report:",
+    "  - Confirmation of health and safety requirements.",
+    "  - Confirmation of access for the site.",
+    "  - Confirmation of data provisions for the site.",
+    "  - Confirmation of electrical provision for the site, including sufficient receptacles available on PDU.",
+    "  - Confirmation of cabling provision for the site.",
+    "  - Confirmation of space availability and condition.",
+    "  - Confirmation of environmental conditions for the site.",
+    "  - Photographs of key aspects of the site, if allowed.",
+    "Complete and submit the Site Survey Report.",
+]
+
+# Default Installation bullets
+_INSTALL_DEFAULT = [
+    "WWT will perform the following tasks:",
+    "Receive and inventory the equipment.",
+    "Check boxes for any damage or triggered tilts and advise the Customer of any faults.",
+    "Unbox equipment and check for physical damage.",
+    "Validate equipment model and quantity against delivery order or Bill-of-Material (BOM).",
+    "Document loose accessories/modules (module cards and SFP/QSFP transceivers) and quantity.",
+    "Verify customer-specific asset tag and device hostname label before installation (Customer assists to print/label when required).",
+    "Install modules/SFPs as per build document and cabling matrix.",
+    "Perform the physical installation and cabling of equipment as per rack elevation diagram and cabling plan.",
+    "Patch network cables per cabling matrix, when required.",
+    "Print and label power cords, when required.",
+    "Install earthing cable for all large equipment, when required.",
+    "Connect power cords as per power mapping.",
+    "Power on devices for green-light check, including sub-modules (line card/supervisor/power supplies); notify PM of any faults.",
+    "If RMA/DOA is required, assist to replace equipment (may require a visit outside of project timeframe depending on OEM parts availability; handled via Change Order process).",
+    "Review validation of connectivity with Customer.",
+    "Complete Customer-provided QA checklist to ensure installation aligns with Customer build documents.",
+    "Validate task completion and receive sign-off.",
+    "Engineers can take photographs of devices in the rack (if allowed in the data centre).",
+    "Flatten boxes and place at Customer-designated disposal area.",
+]
+
+# Default Post-Installation bullets
+_POST_INSTALL_DEFAULT = [
     "Support initial go-live period for the newly installed equipment.",
     "Assist with basic connectivity and reachability checks with the customer team.",
     "Provide ad-hoc troubleshooting for hardware or cabling issues identified immediately after install.",
     "Capture any defects or follow-up actions and hand them back to the project manager.",
 ]
 
+# Default Client Prerequisites bullets
+_PREREQS_DEFAULT = [
+    "Client to provide SFP slotting matrix.",
+    "Client to provide rack layout matrix.",
+    "Client to provide cabling matrix.",
+    "Client to provide network cables.",
+    "Client to provide power mapping matrix.",
+]
 
-# --- helpers ----------------------------------------------------------------
+# Default Out of Scope bullets
+_OUT_OF_SCOPE_DEFAULT = [
+    "Site remediation including, but not limited to, provisioning of rack space, cooling, and power; and troubleshooting of carrier circuits.",
+    "Device wiping or erasing of any operating system (OS) and/or configurations.",
+    "Testing of, or access to, existing installed devices.",
+    "Configuration development or applying configurations to any devices.",
+    "Lift requirements: no work that requires the use of lifts.",
+    "Equipment removal: no removal of decommissioned gear from the project site.",
+    "Electric power installations: no work that requires electric power installations.",
+    "Conduit installation: no cable installations requiring conduit.",
+    "Rack/cabinet installations: no rack or cabinet installations.",
+    "No materials are provided as part of this engagement, including small consumables such as zip ties and Velcro.",
+    "Server lifts: no server lifts are provided.",
+    "Field terminations are limited to continuity testing only; no cable certifications.",
+    "Certification/Validation: no certification or validation for copper or fibre cables.",
+]
 
-_CHECKBOX_RE = re.compile(r"^(?P<prefix>\s*[-*•o])\s*\[(?: |x|X)\]\s*", flags=re.M)
+# --- basic helpers ----------------------------------------------------------
+
+
 def _checkboxes_to_bullets(text: str) -> str:
     """Turn '- [ ] Task' / '* [x] Done' into '- Task' / '* Done'."""
     if not text:
@@ -42,15 +111,41 @@ def _checkboxes_to_bullets(text: str) -> str:
     return _CHECKBOX_RE.sub(lambda m: f"{m.group('prefix')} ", text)
 
 
-def _bullets_block(items):
-    items = [str(i).strip() for i in (items or []) if str(i).strip()]
-    return "\n".join(f"- {i}" for i in items) if items else "- (none provided)"
+def _strip_orphan_blockquotes(text: str) -> str:
+    """Remove lines that are just a lone '>' to avoid stray quote blocks."""
+    if not text:
+        return text or ""
+    return re.sub(r"(?m)^\s*>\s*$", "", text).strip()
+
+
+def _strip_leading_project_tasks_heading(text: str) -> str:
+    """Remove a top-level '### Project Tasks' heading from the tasks block, if present."""
+    if not text:
+        return text or ""
+    return re.sub(
+        r"(?im)^\s*###\s*Project Tasks\s*(?:\n\s*)?",
+        "",
+        text,
+        count=1,
+    ).lstrip()
+
+
+def _strip_site_specific_tbd(tasks: str) -> str:
+    """Remove vague 'Site-specific tasks TBD' bullets."""
+    if not tasks:
+        return tasks or ""
+    return re.sub(
+        r"(?mi)^\s*[-*]\s*Site-specific tasks TBD\.?\s*$",
+        "",
+        tasks,
+    ).strip()
+
+
+# --- BOM handling -----------------------------------------------------------
 
 
 def _site_label(site: dict, idx: int) -> str:
-    """
-    Build a human-readable site label: 'Name — Address' or fallback to 'Site N'.
-    """
+    """Build a human-readable site label: 'Name — Address' or fallback to 'Site N'."""
     name = (site.get("name") or "").strip()
     addr = (site.get("address") or "").strip()
     if name and addr:
@@ -66,7 +161,7 @@ def _multi_site_bom_markdown(schema: dict, include_rack_unit: bool = True) -> st
     """
     Build BOM tables per site.
 
-    For each site with any BOM/optics rows (with qty > 0), emit:
+    For each site with any BOM/optics rows, emit:
 
       #### <Site label>
       | Part Number | Description | Qty | Type | [Rack Unit] |
@@ -80,7 +175,7 @@ def _multi_site_bom_markdown(schema: dict, include_rack_unit: bool = True) -> st
 
     blocks = []
     for idx, site in enumerate(sites, start=1):
-        # Combine BOM + optics_bom for the site
+        # Combine bom + optics_bom for the site
         rows = []
         for r in (site.get("bom") or []):
             if isinstance(r, dict):
@@ -92,7 +187,6 @@ def _multi_site_bom_markdown(schema: dict, include_rack_unit: bool = True) -> st
         if not rows:
             continue
 
-        # Reuse existing table builder by passing a temp schema with just "bom"
         temp_schema = {"bom": rows}
         table_md = bom_table_markdown(temp_schema, include_rack_unit=include_rack_unit)
         if not table_md:
@@ -104,15 +198,35 @@ def _multi_site_bom_markdown(schema: dict, include_rack_unit: bool = True) -> st
     return "\n\n".join(blocks)
 
 
+def _replace_bom_tokens(summary: str, schema: dict) -> str:
+    """
+    Replace any BOM token variant the model may emit with per-site BOM tables.
+    """
+    bom_md = _multi_site_bom_markdown(schema, include_rack_unit=True)
+    if not bom_md:
+        # No BOM rows at any site -> generic placeholder
+        return _BOM_TOKEN_RE.sub("_(No BOM items provided)_", summary)
+
+    replacement = f"\n\n{bom_md}\n\n"
+    return _BOM_TOKEN_RE.sub(replacement, summary)
+
+
 def _ensure_field_engineer_block(summary: str) -> str:
     """Ensure the FE tools block appears in the summary once."""
     if not summary:
         return summary
     if re.search(r"(?i)field\s+engineer.*tools", summary):
         return summary
-    # Insert FE block just before BOM_TABLE or, if absent, before the device totals line; else append.
-    if re.search(r"\bBOM_TABLE\b", summary):
-        return re.sub(r"\bBOM_TABLE\b", _FE_BLOCK + "\n\nBOM_TABLE", summary, count=1)
+
+    # If we see any BOM_TABLE token, inject FE block immediately before it.
+    if _BOM_TOKEN_RE.search(summary):
+        return _BOM_TOKEN_RE.sub(
+            _FE_BLOCK + "\n\nBOM_TABLE",
+            summary,
+            count=1,
+        )
+
+    # Else insert before device totals line, if present
     m = re.search(r"\*\*Device totals:\*\*", summary)
     if m:
         return (
@@ -122,354 +236,130 @@ def _ensure_field_engineer_block(summary: str) -> str:
             + "\n\n"
             + summary[m.start() :]
         )
+
+    # Otherwise append at the end of the summary
     return summary.rstrip() + "\n\n" + _FE_BLOCK + "\n"
 
 
-# detect a generic opener we want to avoid (and also remove the duplicate generic para)
-_GENERIC_OPENERS = re.compile(
-    r"(?i)\b(the partner will|this document|this project|the engagement will)\b"
-)
+# --- Site Overview table in summary ----------------------------------------
 
 
-def _build_client_opener(schema: dict) -> str:
+def _phase_cell_for_site(site: dict, tasks_key: str, flag_key: str | None = None) -> str:
     """
-    Build a natural, client-specific one/two sentence opener for the Project Summary.
+    Decide the 'Site Survey' / 'Installation' / 'Post-Installation' cell value for a site.
 
-    Example vibe:
-      "HSBC requires on-site installation services for Juniper wireless AP hardware across four floors
-       within the Huanpu Science and Technology Industrial Park campus during a weekend in October."
+    Priority:
+      1. site["tasks"][tasks_key]["include"] -> '✔' or '✘'
+      2. site[flag_key] (e.g. 'survey_in_scope') -> '✔' or '✘'
+      3. else -> 'TBD'
     """
-    client = (schema.get("client") or "the client").strip()
-    site = primary_site_line(schema) or "(site)"
-    service = (schema.get("service") or "rack & stack installation services").strip()
-    scope = (schema.get("scope") or "").strip()
-    timeline = (schema.get("timeline") or "").strip()
+    tasks = (site.get("tasks") or {})
+    phase = (tasks.get(tasks_key) or {})
+    include = phase.get("include")
 
-    # First sentence: what / where / when
-    if scope:
-        first = f"{client} require {service} to support {scope.lower()} at {site}"
-    else:
-        first = f"{client} require {service} at {site}"
+    if isinstance(include, bool):
+        return "✔" if include else "✘"
 
-    if timeline:
-        first += f", targeted for {timeline.lower()}"
+    if flag_key is not None and flag_key in site:
+        val = site.get(flag_key)
+        if isinstance(val, bool):
+            return "✔" if val else "✘"
 
-    first += "."
+    return "TBD"
 
-    # Second sentence: what WWT actually does
-    second = (
-        "WWT will provide on-site engineering to install, cable, label and power-on the equipment, "
-        "delivering a clean physical install aligned to site policies and agreed change windows."
+
+def _generate_site_overview_table(schema: dict) -> str:
+    """
+    Build the Site Overview table:
+
+    | Site | Address | Site Role | Site Survey | Installation | Post-Installation | Notes |
+
+    using the 'sites' array from the schema.
+    """
+    sites = [s for s in (schema.get("sites") or []) if isinstance(s, dict)]
+    if not sites:
+        return ""
+
+    header = (
+        "| Site | Address | Site Role | Site Survey | Installation | Post-Installation | Notes |\n"
+        "|------|---------|-----------|-------------|--------------|-------------------|-------|"
     )
 
-    return f"{first} {second}"
+    rows = []
+    for idx, site in enumerate(sites, start=1):
+        name = (site.get("name") or f"Site {idx}").strip()
+        addr = (site.get("address") or "TBD").strip()
+        role = (site.get("role") or "TBD").strip()
+        notes = (site.get("notes") or "TBD").strip()
+
+        site_survey_cell = _phase_cell_for_site(site, "site_survey", "survey_in_scope")
+        install_cell = _phase_cell_for_site(site, "installation", "install_in_scope")
+        post_cell = _phase_cell_for_site(site, "post_install", "post_in_scope")
+
+        rows.append(
+            f"| {name} | {addr} | {role or 'TBD'} | "
+            f"{site_survey_cell} | {install_cell} | {post_cell} | {notes or 'TBD'} |"
+        )
+
+    return header + "\n" + "\n".join(rows)
 
 
-def _inject_opener_after_heading(summary: str, schema: dict) -> str:
+def _inject_site_overview_table(summary: str, schema: dict) -> str:
     """
-    Hard guarantee: ensure a client/site opener appears immediately after
-    '### Project Summary', even if earlier heuristics didn't fire.
-
-    We consider it already present if the standard phrase
-    'WWT will provide on-site engineering' is near the top.
-    """
-    if not summary:
-        return summary
-
-    # If we've already injected this style of opener, don't add another
-    if "WWT will provide on-site engineering" in summary[:400]:
-        return summary
-
-    m = re.search(r"(?im)^###\s*Project Summary\s*$", summary)
-    if not m:
-        return summary
-
-    opener = _build_client_opener(schema)
-    head_end = m.end()
-    before = summary[:head_end]
-    after = summary[head_end:].lstrip()
-
-    return f"{before}\n\n{opener}\n\n{after}".rstrip()
-
-
-def _ensure_client_specific_opener(summary: str, schema: dict) -> str:
-    """
-    Ensure the first paragraph after '### Project Summary' is a natural, client-specific opener,
-    and remove any duplicate generic '...require the physical installation...' paragraph.
-
-    Also:
-      - If the first paragraph starts with **Site address:**, inject the opener above it
-        so you don't just jump straight into address/BOM.
+    Ensure the Project Summary section contains exactly one Site Overview table
+    generated from the schema, and remove any model-generated tables in that region.
     """
     if not summary:
         return summary
 
-    m = re.search(r"(?im)^###\s*Project Summary\s*$", summary)
-    if not m:
+    # Locate "### Project Summary"
+    m_summary = re.search(r"(?im)^###\s*Project Summary\s*$", summary)
+    if not m_summary:
         return summary
 
-    head_end = m.end()
-    before = summary[:head_end]
-    after = summary[head_end:].lstrip()
+    head_end = m_summary.end()
 
-    # First paragraph boundaries
-    para_end_match = re.search(r"\n\s*\n", after)
-    if para_end_match:
-        first_para = after[: para_end_match.start()]
-        rest = after[para_end_match.end() :].lstrip()
+    # Locate "### Bill of Materials" to bound the region
+    m_bom = re.search(r"(?im)^###\s*Bill of Materials\b", summary)
+    mid_end = m_bom.start() if m_bom else len(summary)
+
+    before = summary[:head_end]
+    mid = summary[head_end:mid_end]
+    after = summary[mid_end:]
+
+    mid = mid.lstrip("\n")
+
+    # 1) Strip any markdown tables in the Project Summary region
+    mid_no_tables = _TABLE_BLOCK_RE.sub("", mid).strip("\n")
+
+    # 2) Split mid_no_tables into first paragraph + rest (blank line as separator)
+    para_match = re.search(r"\n\s*\n", mid_no_tables)
+    if para_match:
+        first_para = mid_no_tables[: para_match.start()].strip()
+        rest = mid_no_tables[para_match.end() :].lstrip("\n")
     else:
-        first_para = after
+        first_para = mid_no_tables.strip()
         rest = ""
 
-    client = (schema.get("client") or "").strip()
+    # 3) Generate the canonical Site Overview table
+    table_md = _generate_site_overview_table(schema)
 
-    first_starts_with_primary = re.match(
-        r"^\s*\*\*Primary site:\*\*", first_para or "", flags=re.I
-    ) is not None
-    first_starts_with_site_addr = re.match(
-        r"^\s*\*\*Site address:\*\*", first_para or "", flags=re.I
-    ) is not None
-
-    client_missing = bool(client) and (
-        client.lower() not in (first_para or "")[:200].lower()
-    )
-
-    needs_inject = (
-        (not first_para.strip())
-        or _GENERIC_OPENERS.search(first_para or "")
-        or first_starts_with_primary
-        or first_starts_with_site_addr  # address-first → inject opener
-        or client_missing
-    )
-
-    if needs_inject:
-        opener = _build_client_opener(schema)
-        # Put opener before whatever was there as first paragraph
-        if first_para.strip():
-            after = f"\n\n{opener}\n\n{first_para.strip()}\n\n{rest}".strip()
-        else:
-            after = f"\n\n{opener}\n\n{rest}".strip()
+    if not table_md:
+        new_mid = mid_no_tables
     else:
-        after = first_para + ("\n\n" + rest if rest else "")
+        parts = [p for p in [first_para, table_md, rest] if p]
+        new_mid = "\n\n".join(parts)
 
-    # Remove any paragraph that contains 'require the physical installation'
-    after = re.sub(
-        r"(?ims)^\s*.*require the physical installation.*?(?:\n\s*\n|$)",
-        "",
-        after,
-    ).lstrip()
+    new_mid = new_mid.strip("\n")
 
-    return before + "\n" + after.strip()
+    # Ensure there is a blank line before whatever comes after (e.g. '### Bill of Materials')
+    if after and not after.startswith("\n\n"):
+        after = "\n\n" + after.lstrip("\n")
 
-
-def _normalise_heading_levels_to_h3(text: str) -> str:
-    """Convert any #### Heading to ### Heading for consistency."""
-    if not text:
-        return text or ""
-    return re.sub(r"(?m)^\s*#{4,}\s+", "### ", text)
+    return before + "\n" + new_mid + after
 
 
-def _split_sections(text: str):
-    """
-    Return list of (heading, body) for ### sections.
-    """
-    if not text:
-        return []
-    parts = re.split(r"(?im)^\s*###\s+", text.strip())
-    out = []
-    for p in parts:
-        if not p.strip():
-            continue
-        lines = p.splitlines()
-        heading = lines[0].strip()
-        body = "\n".join(lines[1:]).strip()
-        out.append((heading, body))
-    return out
-
-
-def _rebuild_sections(sections):
-    """Rebuild markdown from list of (heading, body)."""
-    buff = []
-    for h, b in sections:
-        buff.append(f"### {h}\n{b}".rstrip())
-    return "\n\n".join(buff).strip()
-
-def _phase_in_scope(schema: dict, site_phase_key: str, global_key: str | None = None) -> bool:
-    """
-    Return True if this phase is in scope anywhere:
-      - global_scope[global_key].include
-      - OR any site.tasks[site_phase_key].include
-    """
-    global_scope = schema.get("global_scope") or {}
-    gkey = global_key or site_phase_key
-    g_phase = (global_scope.get(gkey) or {})
-    if g_phase.get("include") is True:
-        return True
-
-    for site in (schema.get("sites") or []):
-        if not isinstance(site, dict):
-            continue
-        tasks = (site.get("tasks") or {}).get(site_phase_key) or {}
-        if tasks.get("include") is True:
-            return True
-
-    return False
-
-
-def _filter_and_order_task_sections(tasks_md: str, schema: dict) -> str:
-    """
-    Keep ONLY the allowed headings in _TASK_ORDER (in that order).
-
-    Phases are conditionally included:
-      - If a phase is not in scope anywhere (global + all sites), it is dropped.
-      - Otherwise we keep the model's body if present, or a sensible default.
-    """
-    tasks_md = _normalise_heading_levels_to_h3(tasks_md or "")
-    found = {h: "" for h in _TASK_ORDER}
-
-    # Harvest existing sections from the model output
-    for h, body in _split_sections(tasks_md):
-        if h in found:
-            found[h] = body.strip()
-
-    # Build defaults for sections that the model omitted
-    prereqs = found["Client Prerequisites"] or _bullets_block(schema.get("prerequisites"))
-    oos     = found["Out of Scope"]         or _bullets_block(schema.get("out_of_scope"))
-
-    defaults = {
-        "Site Survey (Site Visit 1)": "- (none provided)",
-        "Installation (Site Visit 2)": "- (none provided)",
-        "Post-Installation Services": "- (none provided)",
-        "Client Prerequisites": prereqs or "- (none provided)",
-        "Out of Scope": oos or "- (none provided)",
-    }
-
-    ordered = []
-    for h in _TASK_ORDER:
-
-        # --- 1. Phase-level gating ---
-        if h == "Site Survey (Site Visit 1)" and not _phase_in_scope(schema, "site_survey", "site_survey"):
-            continue
-
-        if h == "Installation (Site Visit 2)" and not _phase_in_scope(schema, "installation", "rack_and_stack"):
-            continue
-
-        if h == "Post-Installation Services" and not _phase_in_scope(schema, "post_install", "post_install"):
-            continue
-
-        # --- 2. Build body ---
-        body = (found[h] or defaults[h]).strip()
-
-        # --- 3. SPECIAL CASE: Post-Install fallback library ---
-        if h == "Post-Installation Services":
-            # If in-scope AND empty → use fallback bullets
-            if not body or body == "- (none provided)":
-                body = "\n".join(f"- {item}" for item in _POST_INSTALL_LIBRARY)
-
-        ordered.append((h, body))
-
-
-    return _rebuild_sections(ordered)
-
-
-
-
-
-def _render_phase_per_site(
-    schema: dict, base_body: str, phase_label: str, phase_key: str
-) -> str:
-    """
-    If multiple sites have different 'include' flags or custom 'steps' for a phase,
-    expand the generic phase body into per-site subsections.
-
-    Otherwise, return the base_body untouched.
-    """
-    sites = schema.get("sites") or []
-    if len(sites) <= 1:
-        return base_body
-
-    per_site = []
-    for idx, site in enumerate(sites, start=1):
-        if not isinstance(site, dict):
-            continue
-
-        name = (site.get("name") or site.get("site_id") or f"Site {idx}").strip()
-        addr = (site.get("address") or "").strip()
-        label = f"{name} — {addr}" if addr else name
-
-        tasks = (site.get("tasks") or {}).get(phase_key) or {}
-        include = bool(tasks.get("include"))
-        steps = [str(s).strip() for s in (tasks.get("steps") or []) if str(s).strip()]
-
-        per_site.append(
-            {
-                "label": label,
-                "include": include,
-                "steps": steps,
-            }
-        )
-
-    if not per_site:
-        return base_body
-
-    has_mixed_include = len({s["include"] for s in per_site}) > 1
-    has_any_steps = any(s["steps"] for s in per_site)
-
-    # If all sites are identical (all include or all exclude, no extra steps),
-    # don't clutter the doc — just keep the shared body.
-    if not (has_mixed_include or has_any_steps):
-        return base_body
-
-    lines = []
-    lines.append("Per-site breakdown:")
-
-    for s in per_site:
-        lines.append("")
-        lines.append(f"#### {s['label']}")
-        if s["include"]:
-            lines.append("- In scope for this site.")
-        else:
-            lines.append("- Not in scope for this site.")
-
-        if s["steps"]:
-            lines.append("- Additional site-specific steps:")
-            for st in s["steps"]:
-                lines.append(f"  - {st}")
-
-    base_body = base_body.strip()
-    if base_body:
-        lines.append("")
-        lines.append("Generic tasks for this phase (applied where in scope):")
-        lines.append("")
-        lines.append(base_body)
-
-    return "\n".join(lines).strip()
-
-
-def _replace_bom_tokens(summary: str, schema: dict) -> str:
-    """
-    Replace any BOM token variant the model may emit:
-      '{{BOM_TABLE}}', '{BOM_TABLE}', '(BOM_TABLE)', or bare 'BOM_TABLE'
-
-    Now uses per-site BOM tables instead of a single global table.
-    """
-    bom_md = _multi_site_bom_markdown(schema, include_rack_unit=True)
-    if not bom_md:
-        # No BOM rows at any site -> generic placeholder
-        return re.sub(
-            r"\{?\(?\s*BOM_TABLE\s*\)?\}?", "_(No BOM items provided)_", summary
-        )
-
-    # Ensure blank lines before/after for clean markdown
-    replacement = f"\n\n{bom_md}\n\n"
-    return re.sub(r"\{?\(?\s*BOM_TABLE\s*\)?\}?", replacement, summary)
-
-
-def _strip_orphan_blockquotes(text: str) -> str:
-    """Remove lines that are just a lone '>' to avoid stray quote blocks."""
-    if not text:
-        return text or ""
-    return re.sub(r"(?m)^\s*>\s*$", "", text).strip()
+# --- Summary key-tasks pruning ---------------------------------------------
 
 
 def _tidy_key_tasks(summary: str) -> str:
@@ -477,6 +367,7 @@ def _tidy_key_tasks(summary: str) -> str:
     if not summary:
         return summary or ""
     return re.sub(r"(?mi)^\s*[-*]\s*Key tasks:\s*\n", "", summary)
+
 
 def _prune_key_tasks_block(summary: str, schema: dict) -> str:
     """
@@ -498,25 +389,24 @@ def _prune_key_tasks_block(summary: str, schema: dict) -> str:
         return summary
 
     header = m.group("header")
-    body   = m.group("body") or ""
+    body = m.group("body") or ""
 
     lines = body.splitlines()
     if not lines:
         return summary
 
     global_scope = schema.get("global_scope") or {}
-    site_survey_in_scope   = bool(global_scope.get("site_survey", {}).get("include"))
-    post_install_in_scope  = bool(global_scope.get("post_install", {}).get("include"))
+    site_survey_in_scope = bool(global_scope.get("site_survey", {}).get("include"))
+    post_install_in_scope = bool(global_scope.get("post_install", {}).get("include"))
 
     kept_bullets = []
     for line in lines:
         stripped = line.strip()
         if not stripped.startswith(("-", "*")):
-            # odd line, keep it
             kept_bullets.append(line)
             continue
 
-        text_l = stripped[1:].strip().lower()  # after '-'
+        text_l = stripped[1:].strip().lower()  # text after '-'
         if ("site survey" in text_l) and not site_survey_in_scope:
             continue
         if ("post-install" in text_l or "post installation" in text_l) and not post_install_in_scope:
@@ -532,7 +422,189 @@ def _prune_key_tasks_block(summary: str, schema: dict) -> str:
     return summary[: m.start()] + new_block + summary[m.end() :]
 
 
+# --- Section splitting / defaults for phases --------------------------------
+
+
+def _split_h3_sections(text: str):
+    """
+    Split markdown into a list of (heading, body) where heading is the text
+    after '### ' and body is everything until the next '### '.
+    """
+    if not text:
+        return []
+
+    parts = re.split(r"(?im)^###\s+", text.strip())
+    sections = []
+
+    for p in parts:
+        if not p.strip():
+            continue
+        lines = p.splitlines()
+        heading = lines[0].strip()
+        body = "\n".join(lines[1:]).strip("\n")
+        sections.append((heading, body))
+
+    return sections
+
+
+def _rebuild_h3_sections(sections) -> str:
+    """Rebuild markdown from list of (heading, body)."""
+    blocks = []
+    for h, b in sections:
+        if b:
+            blocks.append(f"### {h}\n{b}".rstrip())
+        else:
+            blocks.append(f"### {h}".rstrip())
+    return "\n\n".join(blocks).strip()
+
+
+def _apply_phase_defaults(tasks: str) -> str:
+    """
+    For each key phase section, if the body is empty or '- (none provided)',
+    replace it with the standard default bullets so we always get a 'chunky'
+    rack & stack LoE by default.
+    """
+    if not tasks:
+        return tasks or ""
+
+    sections = _split_h3_sections(tasks)
+    if not sections:
+        return tasks
+
+    default_map = {
+        "Site Survey — Activities Delivered Across Applicable Sites": _SITE_SURVEY_DEFAULT,
+        "Installation — Activities Delivered Across Applicable Sites": _INSTALL_DEFAULT,
+        "Post-Installation — Activities Delivered Across Applicable Sites": _POST_INSTALL_DEFAULT,
+        "Client Prerequisites": _PREREQS_DEFAULT,
+        "Out of Scope": _OUT_OF_SCOPE_DEFAULT,
+    }
+
+    patched = []
+    for heading, body in sections:
+        cleaned = (body or "").strip()
+
+        if heading in default_map and (not cleaned or cleaned == "- (none provided)"):
+            lines = []
+            for line in default_map[heading]:
+                if line.startswith("  -"):
+                    lines.append(line)
+                elif line.startswith("- "):
+                    lines.append(line)
+                else:
+                    lines.append(f"- {line}")
+            body = "\n".join(lines).strip()
+
+        patched.append((heading, body))
+
+    return _rebuild_h3_sections(patched)
+
+
+# --- Site Work Packages auto-fill ------------------------------------------
+
+
+def _build_site_card_body(schema: dict, site_idx: int) -> str:
+    """
+    Build a default body for a site card when the model left it empty.
+    Uses survey/install/post flags from the schema to describe scope.
+    """
+    sites = schema.get("sites") or []
+    if not isinstance(site_idx, int) or site_idx < 0 or site_idx >= len(sites):
+        # Fallback generic text if index is out of range
+        return (
+            "At this site, WWT will deliver the in-scope rack & stack activities "
+            "as defined in this Level of Effort.\n\n"
+            "- Coordinate rack locations and power feeds with the customer.\n"
+            "- Validate onsite readiness (space, power, cooling and access) before installation."
+        )
+
+    site = sites[site_idx] or {}
+
+    survey = bool(site.get("survey_in_scope"))
+    install = bool(site.get("install_in_scope"))
+    post = bool(site.get("post_in_scope"))
+
+    phases = []
+    if survey:
+        phases.append("site survey")
+    if install:
+        phases.append("installation")
+    if post:
+        phases.append("post-installation support")
+
+    if phases:
+        if len(phases) == 1:
+            phases_str = phases[0]
+        elif len(phases) == 2:
+            phases_str = " and ".join(phases)
+        else:
+            phases_str = ", ".join(phases[:-1]) + f" and {phases[-1]}"
+        scope_sentence = (
+            f"At this site, WWT will deliver {phases_str} activities as defined in this Level of Effort."
+        )
+    else:
+        scope_sentence = (
+            "At this site, WWT will deliver the in-scope rack & stack activities "
+            "as defined in this Level of Effort."
+        )
+
+    bullets = [
+        "- Coordinate rack locations, power feeds and patching with the customer team.",
+        "- Validate onsite readiness (space, power, cooling and access) before installation.",
+    ]
+
+    return scope_sentence + "\n\n" + "\n".join(bullets)
+
+
+def _ensure_site_work_packages_have_content(tasks: str, schema: dict) -> str:
+    """
+    Ensure each '#### 📍 ...' site card under
+    '### Site Work Packages by Location' has some body content.
+
+    If the model left a site card empty, inject a default scope sentence
+    and 1–2 bullets based on schema.
+    """
+    if not tasks:
+        return tasks or ""
+
+    # Find the Site Work Packages section
+    m = re.search(r"(?im)^###\s+Site Work Packages by Location\s*$", tasks)
+    if not m:
+        return tasks
+
+    start = m.end()
+    # Find the next '### ' heading after this section (phase sections)
+    m_next = re.search(r"(?im)^###\s+", tasks[start:])
+    end = start + m_next.start() if m_next else len(tasks)
+
+    before = tasks[:start]
+    block = tasks[start:end]
+    after = tasks[end:]
+
+    # Split block into [pre, heading1, body1, heading2, body2, ...]
+    parts = re.split(r"(?m)^(####\s+📍[^\n]*\n)", block)
+    if len(parts) <= 1:
+        return tasks  # nothing to do
+
+    rebuilt = parts[0]
+    site_idx = 0
+
+    for i in range(1, len(parts), 2):
+        heading = parts[i]
+        body = parts[i + 1] if i + 1 < len(parts) else ""
+
+        if heading.lstrip().startswith("#### 📍"):
+            if not body.strip():
+                # Inject default content for this site index
+                body = "\n" + _build_site_card_body(schema, site_idx) + "\n\n"
+            site_idx += 1
+
+        rebuilt += heading + body
+
+    return before + rebuilt + after
+
+
 # --- main -------------------------------------------------------------------
+
 
 def post_process(schema: dict, result: dict) -> dict:
     summary = (result.get("summary") or "").strip()
@@ -544,17 +616,15 @@ def post_process(schema: dict, result: dict) -> dict:
     summary = summary.replace("{{CLIENT}}", client)
     summary = summary.replace("{{PRIMARY_SITE}}", site)
 
-    # Ensure natural opener + remove generic duplicate
-    summary = _ensure_client_specific_opener(summary, schema)
-
-    # Hard guarantee: opener appears directly under "### Project Summary"
-    summary = _inject_opener_after_heading(summary, schema)
+    # Inject canonical Site Overview table based on schema,
+    # and strip any model-generated site tables in the Project Summary region.
+    summary = _inject_site_overview_table(summary, schema)
 
     # Ensure Field Engineer tools block exists
     summary = _ensure_field_engineer_block(summary)
 
     # Replace any BOM token variant (or append a standard section if token missing)
-    if re.search(r"\bBOM_TABLE\b", summary):
+    if _BOM_TOKEN_RE.search(summary):
         summary = _replace_bom_tokens(summary, schema)
     else:
         bom_md = _multi_site_bom_markdown(schema, include_rack_unit=True)
@@ -573,7 +643,7 @@ def post_process(schema: dict, result: dict) -> dict:
     elif not re.search(r"\*\*Device totals:\*\*", summary, flags=re.I):
         summary += f"\n\n{device_totals}"
 
-    # Make sure 'Key tasks overview' reflects what is actually in scope
+    # Make sure 'Key tasks overview' (if present) reflects what is actually in scope
     summary = _prune_key_tasks_block(summary, schema)
 
     # Final format cleanups for summary
@@ -581,24 +651,14 @@ def post_process(schema: dict, result: dict) -> dict:
     summary = _tidy_key_tasks(summary)
     summary = _strip_orphan_blockquotes(summary)
 
-    # ---- TASKS PIPELINE ----
+    # ---- TASKS PIPELINE (light touch: keep model structure) ----
     tasks = _checkboxes_to_bullets(tasks)
-    tasks = _filter_and_order_task_sections(tasks, schema)
-
-    # Inject per-site breakdowns for key phases when sites differ
-    tasks = _normalise_heading_levels_to_h3(tasks or "")
-    sections = _split_sections(tasks)
-    new_sections = []
-    for heading, body in sections:
-        if heading == "Site Survey (Site Visit 1)":
-            body = _render_phase_per_site(schema, body, heading, "site_survey")
-        elif heading == "Installation (Site Visit 2)":
-            body = _render_phase_per_site(schema, body, heading, "installation")
-        elif heading == "Post-Installation Services":
-            body = _render_phase_per_site(schema, body, heading, "post_install")
-        new_sections.append((heading, body))
-
-    tasks = _rebuild_sections(new_sections)
+    tasks = _strip_leading_project_tasks_heading(tasks or "")
+    tasks = _strip_site_specific_tbd(tasks or "")
+    tasks = _ensure_site_work_packages_have_content(tasks or "", schema)
+    # If the model left any phase sections empty / '- (none provided)', fill with defaults
+    tasks = _apply_phase_defaults(tasks or "")
+    tasks = _strip_orphan_blockquotes(tasks or "")
 
     result["summary"] = summary.strip()
     result["tasks"] = tasks.strip()
