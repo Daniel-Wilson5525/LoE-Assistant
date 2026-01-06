@@ -2,7 +2,6 @@
 
 Below is a high-level overview of participating sites (example layout):
 
-
 | Site        | Address                          | Site Role | Site Survey | Installation | Post-Installation | Notes                |
 |------------|-----------------------------------|----------|:-----------:|:------------:|:-----------------:|----------------------|
 | Example DC1 | 10 Example Way, London, E1 1AA   | Primary  | ✔           | ✔            | ✔                 | Main production site |
