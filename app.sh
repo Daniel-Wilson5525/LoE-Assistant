@@ -1,29 +1,35 @@
 #!/usr/bin/env bash
-echo "=== APP.SH MARKER: I AM RUNNING ==="
-exit 0
+set -euxo pipefail
 
-set -e
- 
+echo "=== APP.SH START ==="
+whoami
+pwd
+echo "PORT=${PORT:-<empty>}"
+env | grep -E 'DOMINO|KUBERNETES|PORT' || true
+echo "=== APP.SH ENV DONE ==="
+
 cd /repos/LoE-Assistant/loe-frontend
- 
-echo "PWD=$(pwd)"
-echo "PORT=$PORT"
-echo "Listing loe-frontend:"
+
+echo "=== LOCATION CHECK ==="
+pwd
 ls -la
- 
-echo "vite.config.js contents (if present):"
+echo "======================"
+
+echo "=== vite.config.js (if present) ==="
 ls -la vite.config.* || true
 cat vite.config.js || true
- 
- 
-# Always do a clean install in the App container
+echo "=================================="
+
+echo "=== CLEAN INSTALL ==="
 rm -rf node_modules
- 
-# npm sometimes skips optional deps; this helps
 npm install --include=optional
- 
-# Build using node directly (avoids vite permission issues)
+
+echo "=== BUILD WITH VITE ==="
 node node_modules/vite/bin/vite.js build
- 
-# Serve the built app
+
+echo "=== DIST CONTENTS ==="
+ls -la dist || true
+echo "====================="
+
+echo "=== STARTING SERVER ==="
 npx --yes serve dist --single --listen tcp://0.0.0.0:${PORT}
