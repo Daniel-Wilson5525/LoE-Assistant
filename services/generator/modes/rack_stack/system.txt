@@ -80,22 +80,33 @@ The "tasks" field MUST contain the following sections, in this exact order:
    - Describe the standard activities that will be performed at all sites where Site Survey is in scope.
    - Phrase them as professional, client-facing deliverables (not internal notes).
    - If no survey activities are provided in context, write '- (none provided)'.
+   - Do NOT write long paragraphs in this section.
+   - Use bullet points only.
+
 
 3. ### Installation — Activities Delivered Across Applicable Sites
    - Describe the standard activities that will be performed at all sites where Installation is in scope.
    - If none are available, write '- (none provided)'.
+   - Do NOT write long paragraphs in this section.
+   - Use bullet points only.
 
 4. ### Post-Installation — Activities Delivered Across Applicable Sites
    - Describe the standard activities that will be performed at all sites where Post-Installation support is in scope.
    - If none are available, write '- (none provided)'.
+   - Do NOT write long paragraphs in this section.
+   - Use bullet points only.
 
 5. ### Client Prerequisites
    - List client responsibilities and prerequisites as bullets.
    - If no prerequisites are available, write '- (none provided)'.
+   - Do NOT write long paragraphs in this section.
+   - Use bullet points only.
 
 6. ### Out of Scope
    - List items that are explicitly out of scope for this engagement.
    - If none are available, write '- (none provided)'.
+   - Do NOT write long paragraphs in this section.
+   - Use bullet points only.
 
 ------------------------------------------
 RULES
