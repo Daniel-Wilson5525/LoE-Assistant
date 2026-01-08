@@ -561,24 +561,42 @@ def _apply_phase_defaults(tasks: str) -> str:
 # =============================================================================
 
 def _build_site_card_body(schema: dict, site_idx: int) -> str:
+    """
+    Build a default body for a site card when the model left it empty.
+    Uses scope flags + constraints + per-phase steps from the schema to make
+    the output less generic and more client-useful.
+    """
     sites = schema.get("sites") or []
     if not isinstance(site_idx, int) or site_idx < 0 or site_idx >= len(sites):
         return (
-            "At this site, WWT will deliver the in-scope rack & stack activities as defined in this Level of Effort.\n\n"
-            "- Coordinate rack locations and power feeds with the customer.\n"
+            "At this site, WWT will deliver the in-scope rack & stack activities "
+            "as defined in this Level of Effort.\n\n"
+            "- Coordinate rack locations, power feeds and patching with the customer team.\n"
             "- Validate onsite readiness (space, power, cooling and access) before installation."
         )
 
     site = sites[site_idx] or {}
-    survey = bool(site.get("survey_in_scope"))
-    install = bool(site.get("install_in_scope"))
-    post = bool(site.get("post_in_scope"))
+    site_id = (site.get("site_id") or "").strip()
 
+    tasks_obj = site.get("tasks") or {}
+    survey_obj = tasks_obj.get("site_survey") or {}
+    inst_obj = tasks_obj.get("installation") or {}
+    post_obj = tasks_obj.get("post_install") or {}
+    optics_obj = tasks_obj.get("optics_installation") or {}
+
+    survey = bool(survey_obj.get("include"))
+    install = bool(inst_obj.get("include"))
+    post = bool(post_obj.get("include"))
+    optics = bool(optics_obj.get("include"))
+
+    # Build a natural scope sentence using what is actually in scope
     phases = []
     if survey:
         phases.append("site survey")
     if install:
         phases.append("installation")
+    if optics:
+        phases.append("optics installation")
     if post:
         phases.append("post-installation support")
 
@@ -589,15 +607,45 @@ def _build_site_card_body(schema: dict, site_idx: int) -> str:
             phases_str = " and ".join(phases)
         else:
             phases_str = ", ".join(phases[:-1]) + f" and {phases[-1]}"
-        scope_sentence = f"At this site, WWT will deliver {phases_str} activities as defined in this Level of Effort."
+        prefix = f"At this site{f' ({site_id})' if site_id else ''}, "
+        scope_sentence = prefix + f"WWT will deliver {phases_str} activities as defined in this Level of Effort."
     else:
-        scope_sentence = "At this site, WWT will deliver the in-scope rack & stack activities as defined in this Level of Effort."
+        scope_sentence = (
+            f"At this site{f' ({site_id})' if site_id else ''}, WWT will deliver the in-scope rack & stack activities "
+            "as defined in this Level of Effort."
+        )
 
     bullets = [
         "- Coordinate rack locations, power feeds and patching with the customer team.",
         "- Validate onsite readiness (space, power, cooling and access) before installation.",
     ]
+
+    # Add engineer/day info (only if present)
+    inst_eng = inst_obj.get("engineers")
+    inst_days = inst_obj.get("days")
+    if install and (inst_eng or inst_days):
+        eng_txt = f"{inst_eng} engineer(s)" if inst_eng else "TBD engineers"
+        day_txt = f"{inst_days} day(s)" if inst_days else "TBD days"
+        bullets.append(f"- Installation effort estimate: {eng_txt} for {day_txt} (subject to site readiness and access).")
+
+    # Add any constraints as real nuance
+    for c in (site.get("constraints") or []):
+        c = str(c).strip()
+        if c:
+            bullets.append(f"- Site constraint: {c}.")
+
+    # Add any explicit steps captured per phase (these are usually gold)
+    for step in (post_obj.get("steps") or []):
+        step = str(step).strip()
+        if step:
+            bullets.append(f"- {step}")
+
+    # If optics are in scope, call it out (even if model forgets)
+    if optics:
+        bullets.append("- Coordinate optics requirements and fitment as per the Bill of Materials and customer standards.")
+
     return scope_sentence + "\n\n" + "\n".join(bullets)
+
 
 def _ensure_site_work_packages_have_content(tasks: str, schema: dict) -> str:
     if not tasks:
